@@ -93,6 +93,23 @@ streamlit run app.py
 
 Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 
+## Keep-Alive Automation (GitHub Actions)
+
+This repo includes a scheduled workflow at [.github/workflows/streamlit-keep-alive.yml](.github/workflows/streamlit-keep-alive.yml) that pings your deployed Streamlit app every 15 minutes.
+
+### One-time setup
+
+1. Go to your GitHub repo -> Settings -> Secrets and variables -> Actions.
+2. Create a new repository secret named `STREAMLIT_APP_URL`.
+3. Set its value to your deployed Streamlit URL (for example: `https://your-app-name.streamlit.app`).
+4. Merge this workflow to `main` (scheduled workflows run from the default branch).
+
+### Manual run
+
+You can trigger it anytime from GitHub -> Actions -> `Streamlit Keep Alive` -> `Run workflow`.
+
+Note: This helps reduce cold starts but platform-level sleep policies may still apply.
+
 ---
 
 **Built by Harsh Joshi.**

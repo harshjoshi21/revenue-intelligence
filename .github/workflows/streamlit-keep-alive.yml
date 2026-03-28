@@ -1,0 +1,31 @@
+name: Streamlit Keep Alive
+
+on:
+  schedule:
+    # Every 15 minutes (UTC)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit app URL
+        env:
+          APP_URL: ${{ secrets.STREAMLIT_APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "STREAMLIT_APP_URL secret is not set."
+            exit 1
+          fi
+
+          echo "Pinging $APP_URL"
+          curl --silent --show-error --location --max-time 30 \
+            --retry 3 --retry-delay 5 --retry-connrefused \
+            --user-agent "github-actions-streamlit-keepalive" \
+            "$APP_URL" > /dev/null
+
+          echo "Ping completed successfully."

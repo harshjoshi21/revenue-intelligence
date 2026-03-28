@@ -24,26 +24,30 @@ jobs:
 
       - name: Ping Streamlit app URL
         run: |
-          echo "Pinging $APP_URL"
+          HEALTH_URL="${APP_URL%/}/_stcore/health"
+
+          echo "Pinging $HEALTH_URL"
           curl --silent --show-error --location --max-time 30 \
             --retry 3 --retry-delay 5 --retry-connrefused \
             --user-agent "github-actions-streamlit-keepalive" \
-            "$APP_URL" > /dev/null
+            "$HEALTH_URL" > /dev/null
 
           echo "Ping completed successfully."
 
       - name: Health check (HTTP status)
         run: |
+          HEALTH_URL="${APP_URL%/}/_stcore/health"
+
           STATUS_CODE=$(curl --silent --show-error --location --max-time 30 \
             --retry 2 --retry-delay 3 --retry-connrefused \
             --output /dev/null --write-out "%{http_code}" \
             --user-agent "github-actions-streamlit-healthcheck" \
-            "$APP_URL")
+            "$HEALTH_URL")
 
           echo "Health check status: $STATUS_CODE"
 
           if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 400 ]; then
-            echo "Health check failed for $APP_URL with status $STATUS_CODE"
+            echo "Health check failed for $HEALTH_URL with status $STATUS_CODE"
             exit 1
           fi
 

@@ -254,6 +254,13 @@ pipeline_improvement = st.sidebar.slider(
     help="Adjust to see impact on pipeline"
 )
 
+view_mode = st.sidebar.radio(
+    "Executive View Mode",
+    options=["All Accounts", "At-Risk Focus", "Expansion Focus"],
+    index=0,
+    help="Switch context for customer-centric analysis without changing core filters."
+)
+
 # Filter data
 leads_filtered = leads_df[
     (leads_df['channel'].isin(selected_channels)) &
@@ -267,18 +274,27 @@ customers_filtered = customers_df[
     (customers_df['start_date'] <= filter_end_date)
 ]
 
+if view_mode == "At-Risk Focus":
+    customers_view = customers_filtered[customers_filtered['churn_risk'] > 70]
+elif view_mode == "Expansion Focus":
+    customers_view = customers_filtered[(customers_filtered['is_churned'] == 0) & (customers_filtered['expansion_arr'] > 0)]
+else:
+    customers_view = customers_filtered.copy()
+
+leads_view = leads_filtered.copy()
+
 # Phase 1: dynamic executive insight strip
 st.markdown("### Top Insights for Current Selection")
 
-if len(leads_filtered) > 0 and len(customers_filtered) > 0:
-    n_sql_filtered = leads_filtered['is_sql'].sum()
-    n_won_filtered = leads_filtered['is_won'].sum()
+if len(leads_view) > 0 and len(customers_view) > 0:
+    n_sql_filtered = leads_view['is_sql'].sum()
+    n_won_filtered = leads_view['is_won'].sum()
     sql_to_won = (n_won_filtered / n_sql_filtered * 100) if n_sql_filtered > 0 else 0
 
-    at_risk_customers = customers_filtered[customers_filtered['churn_risk'] > 70]
-    at_risk_share = (len(at_risk_customers) / len(customers_filtered) * 100) if len(customers_filtered) > 0 else 0
+    at_risk_customers = customers_view[customers_view['churn_risk'] > 70]
+    at_risk_share = (len(at_risk_customers) / len(customers_view) * 100) if len(customers_view) > 0 else 0
 
-    expansion_view = customers_filtered[customers_filtered['is_churned'] == 0].groupby('segment').agg({
+    expansion_view = customers_view[customers_view['is_churned'] == 0].groupby('segment').agg({
         'arr': 'sum',
         'expansion_arr': 'sum'
     }).reset_index()
@@ -306,7 +322,7 @@ if len(leads_filtered) > 0 and len(customers_filtered) > 0:
         st.markdown(f"""
         <div class='insight-card'>
             <h5>Retention Exposure</h5>
-            <p><strong>{len(at_risk_customers)}</strong> accounts are high risk ({at_risk_share:.1f}% of selected customers), indicating proactive CS intervention need.</p>
+            <p><strong>{len(at_risk_customers)}</strong> accounts are high risk ({at_risk_share:.1f}% of current view), indicating proactive CS intervention need.</p>
         </div>
         """, unsafe_allow_html=True)
     with c3:
@@ -319,25 +335,52 @@ if len(leads_filtered) > 0 and len(customers_filtered) > 0:
 else:
     st.warning("Not enough filtered data to generate executive insights. Widen date range or adjust segment/channel filters.")
 
+st.markdown("### Benchmark Lens")
+bench1, bench2, bench3, bench4 = st.columns(4)
+with bench1:
+    churn_signal = "Healthy" if churn_rate < 7 else "Watch"
+    st.caption(f"Churn benchmark: 5-7% typical | Current: {churn_rate:.1f}% ({churn_signal})")
+with bench2:
+    nrr_signal = "Strong" if nrr >= 110 else "Needs lift"
+    st.caption(f"NRR benchmark: 105-115% | Current: {nrr:.0f}% ({nrr_signal})")
+with bench3:
+    st.caption(f"SQL->Won benchmark: 20-30% | Current: {sql_to_won:.1f}%")
+with bench4:
+    expansion_ref = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if len(customers_view) > 0 and customers_view['arr'].sum() > 0 else 0
+    st.caption(f"Expansion benchmark: 10-20% | Current: {expansion_ref:.1f}%")
+
 st.sidebar.divider()
 st.sidebar.markdown("**View detailed breakdowns in tabs below.**")
+with st.sidebar.popover("📘 KPI Glossary"):
+    st.markdown("**MQL**: Marketing Qualified Lead")
+    st.markdown("**SQL**: Sales Qualified Lead")
+    st.markdown("**NRR**: Net Revenue Retention")
+    st.markdown("**Cohort**: Group of customers acquired in same period")
+    st.markdown("**Churn Risk**: Engagement-derived probability signal (0-100)")
 
 # TABS
-tab1, tab2, tab3, tab4 = st.tabs(["📈 Funnel", "⚠️ Churn & Health", "💰 Expansion & Cohorts", "🔮 Forecast"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📈 Pipeline Risks",
+    "⚠️ Customer Health Actions",
+    "💰 Expansion Levers",
+    "🔮 Scenario Forecast",
+    "🎯 Action Playbook"
+])
 
 # TAB 1: FUNNEL
 with tab1:
-    st.subheader("Sales Funnel Overview")
+    st.subheader("Pipeline Risks")
+    st.caption("Identify conversion friction and unresolved opportunities that slow revenue realization.")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         # Funnel stages with what-if adjustment
-        n_leads = len(leads_filtered)
-        n_mql = leads_filtered['is_mql'].sum()
-        n_sql = leads_filtered['is_sql'].sum()
-        n_opp = leads_filtered['is_opp'].sum()
-        n_won = leads_filtered['is_won'].sum()
+        n_leads = len(leads_view)
+        n_mql = leads_view['is_mql'].sum()
+        n_sql = leads_view['is_sql'].sum()
+        n_opp = leads_view['is_opp'].sum()
+        n_won = leads_view['is_won'].sum()
         
         # Apply what-if improvement
         if pipeline_improvement > 0:
@@ -382,9 +425,9 @@ with tab1:
     
     # Drill-down: stuck deals by channel
     st.markdown("**Stuck Opportunities by Channel**")
-    stuck_opps = leads_filtered[
-        (leads_filtered['is_opp'] == True) & 
-        (leads_filtered['is_won'] == False)
+    stuck_opps = leads_view[
+        (leads_view['is_opp'] == True) & 
+        (leads_view['is_won'] == False)
     ].groupby('channel').size().reset_index(name='Count')
     
     if len(stuck_opps) > 0:
@@ -393,23 +436,24 @@ with tab1:
         
         # Drill into specific channel
         selected_channel_drill = st.selectbox("Drill into channel:", stuck_opps['channel'].unique())
-        channel_stuck = leads_filtered[
-            (leads_filtered['channel'] == selected_channel_drill) &
-            (leads_filtered['is_opp'] == True) &
-            (leads_filtered['is_won'] == False)
+        channel_stuck = leads_view[
+            (leads_view['channel'] == selected_channel_drill) &
+            (leads_view['is_opp'] == True) &
+            (leads_view['is_won'] == False)
         ][['lead_id', 'segment', 'opp_date', 'channel']].sort_values('opp_date', ascending=False)
         
         st.dataframe(channel_stuck.head(10), use_container_width=True)
 
 # TAB 2: CHURN & HEALTH
 with tab2:
-    st.subheader("Customer Health & Churn Risk")
+    st.subheader("Customer Health Actions")
+    st.caption("Translate risk signals into account intervention priorities.")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         # Churn risk heatmap by segment
-        risk_by_segment = customers_filtered.groupby('segment').agg({
+        risk_by_segment = customers_view.groupby('segment').agg({
             'churn_risk': 'mean',
             'customer_id': 'count'
         }).reset_index()
@@ -428,8 +472,8 @@ with tab2:
     
     with col1:
         # Engagement vs. Churn scatter
-        at_risk = customers_filtered[customers_filtered['churn_risk'] > 70]
-        healthy = customers_filtered[customers_filtered['churn_risk'] <= 70]
+        at_risk = customers_view[customers_view['churn_risk'] > 70]
+        healthy = customers_view[customers_view['churn_risk'] <= 70]
         
         fig = go.Figure()
         
@@ -471,7 +515,7 @@ with tab2:
     
     # Drill-down: at-risk customers
     st.markdown("**At-Risk Customers Requiring Action**")
-    at_risk_detail = customers_filtered[customers_filtered['churn_risk'] > 70].sort_values('churn_risk', ascending=False)[
+    at_risk_detail = customers_view[customers_view['churn_risk'] > 70].sort_values('churn_risk', ascending=False)[
         ['customer_id', 'segment', 'arr', 'engagement_score', 'churn_risk', 'features_adopted', 'support_sentiment']
     ]
     
@@ -480,17 +524,22 @@ with tab2:
 
 # TAB 3: EXPANSION & COHORTS
 with tab3:
-    st.subheader("Expansion Revenue & Cohort Retention")
+    st.subheader("Expansion Levers")
+    st.caption("Pinpoint segment-level expansion momentum and cohort retention quality.")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         # Expansion by segment
-        expansion_by_segment = customers_filtered[customers_filtered['is_churned'] == 0].groupby('segment').agg({
+        expansion_by_segment = customers_view[customers_view['is_churned'] == 0].groupby('segment').agg({
             'arr': 'sum',
             'expansion_arr': 'sum'
         }).reset_index()
-        expansion_by_segment['expansion_rate'] = (expansion_by_segment['expansion_arr'] / expansion_by_segment['arr'] * 100).round(1)
+        expansion_by_segment['expansion_rate'] = np.where(
+            expansion_by_segment['arr'] > 0,
+            (expansion_by_segment['expansion_arr'] / expansion_by_segment['arr'] * 100).round(1),
+            0
+        )
         expansion_by_segment.columns = ['Segment', 'Base ARR', 'Expansion ARR', 'Expansion Rate (%)']
         
         fig = px.bar(
@@ -504,7 +553,7 @@ with tab3:
     
     with col1:
         # Cohort retention curve
-        cohort_analysis = customers_filtered.groupby('cohort').agg({
+        cohort_analysis = customers_view.groupby('cohort').agg({
             'customer_id': 'count',
             'is_churned': 'sum',
             'arr': 'sum'
@@ -531,15 +580,16 @@ with tab3:
 
 # TAB 4: FORECAST
 with tab4:
-    st.subheader("ARR Forecast & Growth Projections")
+    st.subheader("Scenario Forecast")
+    st.caption("Stress-test ARR outcomes under current churn, expansion, and conversion assumptions.")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         # Build forecast with what-if impact
-        current_arr = customers_filtered[customers_filtered['is_churned'] == 0]['arr'].sum()
-        churn_rate = customers_filtered['is_churned'].mean()
-        expansion_rate = (customers_filtered['expansion_arr'].sum() / customers_filtered['arr'].sum()) if customers_filtered['arr'].sum() > 0 else 0
+        current_arr = customers_view[customers_view['is_churned'] == 0]['arr'].sum()
+        churn_rate = customers_view['is_churned'].mean() if len(customers_view) > 0 else 0
+        expansion_rate = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum()) if customers_view['arr'].sum() > 0 else 0
         
         forecast_months = 13  # Generate 0-12 months
         forecast_data_custom = []
@@ -590,6 +640,48 @@ with tab4:
     - Current Expansion Rate: {expansion_rate*100:.1f}%
     - What-If Conversion Improvement: {pipeline_improvement}%
     """)
+
+# TAB 5: PLAYBOOK
+with tab5:
+    st.subheader("Action Playbook")
+    st.caption("Operational recommendations generated from current risk, pipeline, and expansion signals.")
+
+    sql_to_won_now = (leads_view['is_won'].sum() / leads_view['is_sql'].sum() * 100) if leads_view['is_sql'].sum() > 0 else 0
+    at_risk_count = len(customers_view[customers_view['churn_risk'] > 70])
+    total_customers_view = len(customers_view)
+    at_risk_pct = (at_risk_count / total_customers_view * 100) if total_customers_view > 0 else 0
+    expansion_pct = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if customers_view['arr'].sum() > 0 else 0
+
+    playbook_rows = [
+        {
+            'Signal': 'High churn exposure',
+            'Trigger': f'At-risk share {at_risk_pct:.1f}% (threshold > 20%)',
+            'Recommended Owner': 'Customer Success Manager',
+            'Suggested SLA': 'Start outreach within 48 hours',
+            'Expected Impact': 'Reduce avoidable churn in current quarter'
+        },
+        {
+            'Signal': 'Pipeline conversion pressure',
+            'Trigger': f'SQL->Won conversion {sql_to_won_now:.1f}% (target >= 25%)',
+            'Recommended Owner': 'RevOps + Sales Leadership',
+            'Suggested SLA': 'Run stage audit this week',
+            'Expected Impact': 'Lift win rates and improve forecast reliability'
+        },
+        {
+            'Signal': 'Expansion underperformance',
+            'Trigger': f'Expansion rate {expansion_pct:.1f}% (target >= 12%)',
+            'Recommended Owner': 'CS Leadership + Account Strategy',
+            'Suggested SLA': 'Prioritize top 20 expansion candidates in 7 days',
+            'Expected Impact': 'Increase NRR and net ARR growth'
+        }
+    ]
+
+    playbook_df = pd.DataFrame(playbook_rows)
+    st.dataframe(playbook_df, use_container_width=True)
+
+    st.markdown("**Execution Notes:**")
+    st.markdown("- Review this playbook after every filter or scenario change.")
+    st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
 
 # Footer
 st.divider()

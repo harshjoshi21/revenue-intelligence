@@ -59,13 +59,15 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 - **Date Range**: Focus on a specific time period
 - **Marketing Channels**: Filter by organic search, paid ads, referrals, etc.
 - **Customer Segments**: Drill into healthcare, finance, tech, non-profit, manufacturing
+- **Executive View Mode**: Switch between all accounts, at-risk focus, and expansion focus
 - **What-If Slider**: Test impact of improving SQL→Won conversion rate
 
 ### Drilling Into the Data
-1. **Funnel Tab**: Click into stuck opportunities by channel to identify bottlenecks
-2. **Churn Tab**: See individual at-risk customers and their engagement signals
-3. **Expansion Tab**: Understand which segments and cohorts are expanding
-4. **Forecast Tab**: Model future ARR under different scenarios
+1. **Pipeline Risks**: Identify conversion bottlenecks and unresolved opportunities
+2. **Customer Health Actions**: Prioritize high-risk accounts and intervention signals
+3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum
+4. **Scenario Forecast**: Model ARR outcomes under different assumptions
+5. **Action Playbook**: Map observed signals to owner-level actions and SLA guidance
 
 ## Data Simulation
 

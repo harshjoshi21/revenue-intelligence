@@ -96,6 +96,7 @@ Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 ## Keep-Alive Automation (GitHub Actions)
 
 This repo includes a scheduled workflow at [.github/workflows/streamlit-keep-alive.yml](.github/workflows/streamlit-keep-alive.yml) that pings your deployed Streamlit app every 15 minutes and runs a separate HTTP health check.
+The workflow targets Streamlit's health endpoint (`/_stcore/health`) to avoid redirect loops and get a stable status response.
 
 ### One-time setup
 

@@ -22,28 +22,48 @@ jobs:
             exit 1
           fi
 
+          CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
+          if [ -z "$CLEAN_APP_URL" ]; then
+            echo "STREAMLIT_APP_URL is empty after trimming whitespace."
+            exit 1
+          fi
+
       - name: Ping Streamlit app URL
         run: |
-          echo "Pinging $APP_URL"
-          curl --silent --show-error --location --max-time 30 \
+          CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
+          HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
+
+          echo "Pinging $HEALTH_URL"
+          STATUS_CODE=$(curl --silent --show-error --max-time 30 \
             --retry 3 --retry-delay 5 --retry-connrefused \
             --user-agent "github-actions-streamlit-keepalive" \
-            "$APP_URL" > /dev/null
+            --output /dev/null --write-out "%{http_code}" \
+            "$HEALTH_URL")
+
+          echo "Ping status: $STATUS_CODE"
+
+          if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 400 ]; then
+            echo "Ping failed for $HEALTH_URL with status $STATUS_CODE"
+            exit 1
+          fi
 
           echo "Ping completed successfully."
 
       - name: Health check (HTTP status)
         run: |
-          STATUS_CODE=$(curl --silent --show-error --location --max-time 30 \
+          CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
+          HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
+
+          STATUS_CODE=$(curl --silent --show-error --max-time 30 \
             --retry 2 --retry-delay 3 --retry-connrefused \
             --output /dev/null --write-out "%{http_code}" \
             --user-agent "github-actions-streamlit-healthcheck" \
-            "$APP_URL")
+            "$HEALTH_URL")
 
           echo "Health check status: $STATUS_CODE"
 
           if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 400 ]; then
-            echo "Health check failed for $APP_URL with status $STATUS_CODE"
+            echo "Health check failed for $HEALTH_URL with status $STATUS_CODE"
             exit 1
           fi
 

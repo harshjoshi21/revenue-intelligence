@@ -54,14 +54,33 @@ st.markdown("""
         max-width: 980px;
         opacity: 0.95;
     }
-    .trust-strip {
+    .profile-panel {
         background: #fff;
         border: 1px solid var(--slate-200);
+        border-left: 5px solid var(--gold-500);
         border-radius: 12px;
-        padding: 12px 14px;
+        padding: 14px 16px;
         margin: 0 0 10px 0;
         color: var(--ink-900);
-        font-size: 0.95rem;
+    }
+    .profile-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .profile-title {
+        font-size: 1rem;
+        color: var(--navy-900);
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .profile-text {
+        font-size: 0.92rem;
+        color: #334155;
+        margin: 0;
     }
     .pill {
         display: inline-block;
@@ -149,9 +168,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class='trust-strip'>
-    <strong>Built by Harsh Joshi</strong> | Personal project showcase of decision-grade thinking across Customer Success, RevOps, implementation operations, and solutions engineering.
-    <br/>
+<div class='profile-panel'>
+    <div class='profile-label'>Professional Profile</div>
+    <div class='profile-title'>Harsh Joshi | Revenue and Customer Success Analytics Portfolio</div>
+    <p class='profile-text'>Personal showcase of structured, decision-oriented thinking across Customer Success, RevOps, implementation operations, and solutions engineering.</p>
     <span class='pill'>Customer Success Analytics</span>
     <span class='pill'>RevOps Analytics</span>
     <span class='pill'>Implementation Operations</span>

@@ -114,6 +114,20 @@ streamlit run app.py
 
 Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 
+## Versioning and Release Workflow
+
+This project follows a release-first branching model for portfolio clarity.
+
+1. `main` = stable, formal releases only.
+2. `dev` = active development and testing for the next major/minor release.
+3. Feature branches should be created from `dev` and merged back into `dev`.
+4. When a release is ready, merge `dev` into `main` and create a release tag on `main` (for example: `v2.0.0`, `v3.0.0`).
+5. Optional milestone tags can be created on `dev` as pre-release checkpoints (for example: `v2.0.0-rc.1`).
+
+Current baseline:
+- `v1.0.0` is the stable release baseline on `main`.
+- `dev` is the active v2 development line.
+
 ## Keep-Alive Automation (GitHub Actions)
 
 This repo includes a scheduled workflow at [.github/workflows/streamlit-keep-alive.yml](.github/workflows/streamlit-keep-alive.yml) that pings your deployed Streamlit app every 15 minutes and runs a separate HTTP health check.

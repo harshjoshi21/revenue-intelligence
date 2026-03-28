@@ -371,7 +371,7 @@ with tab4:
     with col2:
         current_arr_m = current_arr / 1e6
         month_6_arr = forecast_df_custom[forecast_df_custom['Month'] == 6]['Projected ARR'].values[0]
-       # month_12_arr = forecast_df_custom[forecast_df_custom['Month'] == 12]['Projected ARR'].values[0]
+        month_12_arr = forecast_df_custom[forecast_df_custom['Month'] == 12]['Projected ARR'].values[0]
         
         st.metric("Current ARR", f"${current_arr_m:.2f}M")
         st.metric("6-Month Projected ARR", f"${month_6_arr:.2f}M", delta=f"${month_6_arr - current_arr_m:.2f}M")

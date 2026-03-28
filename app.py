@@ -244,6 +244,40 @@ st.info("Explore from left to right: filters define your operating context, summ
 
 st.caption("Methodology note: This portfolio uses realistic simulated SaaS data to demonstrate analytical thinking, decision framing, and domain execution patterns.")
 
+with st.expander("🧭 Evaluator Walkthrough (2 minutes)", expanded=False):
+    st.markdown("**1) Understand portfolio intent (20 sec)**")
+    st.markdown("Read the hero, profile panel, and first-glance cards to see the strategic framing and domain scope.")
+    st.markdown("**2) Scan executive signals (30 sec)**")
+    st.markdown("Use Executive Snapshot and Top Insights to identify immediate risk/opportunity themes.")
+    st.markdown("**3) Stress-test context (30 sec)**")
+    st.markdown("Change filters and Executive View Mode to see how priorities shift by segment, channel, and scenario.")
+    st.markdown("**4) Validate actionability (40 sec)**")
+    st.markdown("Open Action Playbook to map data signals to owner, SLA, and expected business impact.")
+
+st.markdown("### Decisions This Dashboard Enables")
+d1, d2, d3 = st.columns(3)
+with d1:
+    st.markdown("""
+    <div class='insight-card'>
+        <h5>Retention Prioritization</h5>
+        <p>Which accounts require immediate CS intervention to reduce near-term churn risk.</p>
+    </div>
+    """, unsafe_allow_html=True)
+with d2:
+    st.markdown("""
+    <div class='insight-card'>
+        <h5>Pipeline Intervention</h5>
+        <p>Where conversion breakdowns need RevOps and sales process correction.</p>
+    </div>
+    """, unsafe_allow_html=True)
+with d3:
+    st.markdown("""
+    <div class='insight-card'>
+        <h5>Expansion Strategy</h5>
+        <p>Which segments and cohorts are best positioned for upsell and NRR improvement.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 # Key metrics at top
 st.markdown("### Executive Snapshot")
 col1, col2, col3, col4 = st.columns(4)

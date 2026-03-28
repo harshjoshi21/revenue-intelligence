@@ -6,6 +6,14 @@ A data-driven RevOps and Growth Analytics tool that provides real-time visibilit
 
 This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.
 
+## Decisions Enabled
+
+This project is designed to demonstrate practical decision support, not just reporting. It helps answer:
+- Which accounts should Customer Success prioritize this week to reduce churn exposure?
+- Where is the pipeline conversion process breaking, and which stage needs intervention?
+- Which customer segments/cohorts offer the strongest expansion and NRR opportunity?
+- How does ARR trajectory shift under different conversion and operating assumptions?
+
 On first glance, the landing screen now answers:
 - **What this project is**: A unified revenue intelligence workspace for CS and RevOps decisions
 - **What to do with it**: Prioritize pipeline, retention, and expansion actions
@@ -18,6 +26,13 @@ On first glance, the landing screen now answers:
 2. Review **Executive Snapshot** and **Top Insights for Current Selection** for immediate risk/opportunity framing.
 3. Use the sidebar filters to simulate different operating contexts.
 4. Open tabs to investigate funnel bottlenecks, churn drivers, expansion leverage, and forecast scenarios.
+
+## How to Evaluate This Project in 2 Minutes (Leadership Review)
+
+1. **Intent and credibility (0:00-0:30)**: Read the landing hero and professional profile panel.
+2. **Signal quality (0:30-1:00)**: Review Executive Snapshot, Top Insights, and Benchmark Lens.
+3. **Operational depth (1:00-1:30)**: Toggle Executive View Mode and inspect one segment/channel scenario.
+4. **Actionability (1:30-2:00)**: Use Action Playbook to connect findings to owner-level execution.
 
 ## Methodology Note
 

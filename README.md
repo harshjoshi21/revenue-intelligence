@@ -95,4 +95,4 @@ Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 
 ---
 
-**Built for RevOps leaders and growth-focused teams.**
+**Built by Harsh Joshi.**

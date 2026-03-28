@@ -387,8 +387,11 @@ with tab4:
 
 # Footer
 st.divider()
-st.markdown("""
+local_now = datetime.now().astimezone()
+timezone_label = local_now.tzname() or local_now.strftime("UTC%z")
+footer_html = f"""
     <div style='text-align: center; color: #888; font-size: 12px; padding-top: 20px;'>
-    Built for RevOps and Growth Leaders | Data refreshed: """ + datetime.now().strftime("%Y-%m-%d %H:%M") + """
+    Built by Harsh Joshi | Data refreshed: {local_now.strftime("%Y-%m-%d %H:%M")} ({timezone_label})
     </div>
-""", unsafe_allow_html=True)
+"""
+st.markdown(footer_html, unsafe_allow_html=True)

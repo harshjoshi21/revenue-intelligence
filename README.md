@@ -2,6 +2,20 @@
 
 A data-driven RevOps and Growth Analytics tool that provides real-time visibility across your SaaS funnel, customer health, expansion opportunities, and forward-looking forecasts.
 
+## V2 Progress Snapshot (In Development on `dev`)
+
+Completed so far:
+- **Phase 1**: Executive landing experience (hero framing, profile panel, first-glance clarity cards, dynamic insight row)
+- **Phase 2**: Decision-oriented analytics flow (action-focused tabs, benchmark lens, glossary, executive view mode, action playbook)
+- **Phase 3**: Visual system upgrade (shared chart theme, executive palette, improved chart readability and consistency)
+- **Phase 4**: Portfolio packaging (in-app evaluator walkthrough, decisions-enabled framing, leadership review path)
+- **Phase 5 (prep)**: Dev-side readiness gate (technical smoke checks and [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md))
+
+Current status:
+- `main` remains stable at **v1.0.0**
+- `dev` is the active **v2** development line
+- Formal release to `main` will happen only after final v2 validation
+
 ## Portfolio Context (For Senior Leaders)
 
 This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.

@@ -145,6 +145,9 @@ Current baseline:
 - `v1.0.0` is the stable release baseline on `main`.
 - `dev` is the active v2 development line.
 
+Release preparation checklist:
+- See [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md) for the full pre-release validation gate on `dev`.
+
 ## Keep-Alive Automation (GitHub Actions)
 
 This repo includes a scheduled workflow at [.github/workflows/streamlit-keep-alive.yml](.github/workflows/streamlit-keep-alive.yml) that pings your deployed Streamlit app every 15 minutes and runs a separate HTTP health check.

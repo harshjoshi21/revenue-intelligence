@@ -129,6 +129,12 @@ st.markdown("""
         color: #334155;
         font-size: 0.88rem;
     }
+    .section-note {
+        font-size: 0.86rem;
+        color: #475569;
+        margin-top: -4px;
+        margin-bottom: 8px;
+    }
     .metric-card {
         padding: 20px;
         border-radius: 8px;
@@ -154,6 +160,31 @@ def load_data():
     return leads_df, customers_df, forecast_df
 
 leads_df, customers_df, forecast_df = load_data()
+
+# Phase 3: shared visual system for charts
+PRIMARY_BLUE = "#1f4e79"
+SECONDARY_BLUE = "#3a77b2"
+RISK_RED = "#c0392b"
+HEALTH_GREEN = "#1f8f6a"
+WARNING_AMBER = "#d4a24c"
+NEUTRAL_SLATE = "#64748b"
+
+
+def apply_chart_theme(fig, title, xaxis_title=None, yaxis_title=None, height=400):
+    fig.update_layout(
+        title=title,
+        height=height,
+        template="plotly_white",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#1f2937"),
+        margin=dict(l=10, r=10, t=60, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    if xaxis_title is not None:
+        fig.update_xaxes(title=xaxis_title, gridcolor="#e5e7eb")
+    if yaxis_title is not None:
+        fig.update_yaxes(title=yaxis_title, gridcolor="#e5e7eb")
 
 # Phase 1: Executive landing layer
 st.markdown("""
@@ -430,11 +461,11 @@ with tab1:
                 x=funnel_df['Count'],
                 textposition="inside",
                 textinfo="value+percent initial",
-                marker=dict(color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
+                marker=dict(color=[PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, RISK_RED])
             )
         ])
-        
-        fig.update_layout(height=400, title="Pipeline Funnel (by Stage)")
+
+        apply_chart_theme(fig, "Pipeline Funnel (by Stage)", height=400)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
@@ -451,7 +482,14 @@ with tab1:
     ].groupby('channel').size().reset_index(name='Count')
     
     if len(stuck_opps) > 0:
-        fig = px.bar(stuck_opps, x='channel', y='Count', title="Opportunities Not Closed (by Marketing Source)")
+        fig = px.bar(
+            stuck_opps,
+            x='channel',
+            y='Count',
+            title="Opportunities Not Closed (by Marketing Source)",
+            color_discrete_sequence=[WARNING_AMBER]
+        )
+        apply_chart_theme(fig, "Opportunities Not Closed (by Marketing Source)", "Marketing Channel", "Open Opportunities", 380)
         st.plotly_chart(fig, use_container_width=True)
         
         # Drill into specific channel
@@ -484,10 +522,11 @@ with tab2:
             x='Segment',
             y='Avg Churn Risk',
             color='Avg Churn Risk',
-            color_continuous_scale=['green', 'yellow', 'red'],
+            color_continuous_scale=[HEALTH_GREEN, WARNING_AMBER, RISK_RED],
             range_color=[0, 100],
             title="Average Churn Risk by Segment"
         )
+        apply_chart_theme(fig, "Average Churn Risk by Segment", "Segment", "Avg Churn Risk", 380)
         st.plotly_chart(fig, use_container_width=True)
     
     with col1:
@@ -501,7 +540,7 @@ with tab2:
             x=healthy['engagement_score'],
             y=healthy['churn_risk'],
             mode='markers',
-            marker=dict(size=8, color='green', opacity=0.6),
+            marker=dict(size=8, color=HEALTH_GREEN, opacity=0.65),
             text=healthy['customer_id'],
             name='Healthy (Risk < 70)',
             hovertemplate='<b>%{text}</b><br>Engagement: %{x:.0f}<br>Churn Risk: %{y:.0f}<extra></extra>'
@@ -511,19 +550,14 @@ with tab2:
             x=at_risk['engagement_score'],
             y=at_risk['churn_risk'],
             mode='markers',
-            marker=dict(size=10, color='red', opacity=0.7),
+            marker=dict(size=10, color=RISK_RED, opacity=0.72),
             text=at_risk['customer_id'],
             name='At Risk (Risk > 70)',
             hovertemplate='<b>%{text}</b><br>Engagement: %{x:.0f}<br>Churn Risk: %{y:.0f}<extra></extra>'
         ))
         
-        fig.add_hline(y=70, line_dash="dash", line_color="orange", annotation_text="Risk Threshold")
-        fig.update_layout(
-            title="Engagement Score vs. Churn Risk",
-            xaxis_title="Engagement Score (0-100)",
-            yaxis_title="Churn Risk (0-100)",
-            height=400
-        )
+        fig.add_hline(y=70, line_dash="dash", line_color=WARNING_AMBER, annotation_text="Risk Threshold")
+        apply_chart_theme(fig, "Engagement Score vs. Churn Risk", "Engagement Score (0-100)", "Churn Risk (0-100)", 400)
         
         st.plotly_chart(fig, use_container_width=True)
     
@@ -567,8 +601,10 @@ with tab3:
             x='Segment',
             y=['Base ARR', 'Expansion ARR'],
             barmode='stack',
-            title="Base vs. Expansion ARR by Segment"
+            title="Base vs. Expansion ARR by Segment",
+            color_discrete_sequence=[PRIMARY_BLUE, HEALTH_GREEN]
         )
+        apply_chart_theme(fig, "Base vs. Expansion ARR by Segment", "Segment", "ARR", 380)
         st.plotly_chart(fig, use_container_width=True)
     
     with col1:
@@ -590,6 +626,8 @@ with tab3:
             title="Cohort Retention Rate Over Time",
             height=350
         )
+        fig.update_traces(line=dict(color=SECONDARY_BLUE, width=3), marker=dict(color=PRIMARY_BLUE, size=8))
+        apply_chart_theme(fig, "Cohort Retention Rate Over Time", "Cohort", "Retention (%)", 350)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
@@ -632,17 +670,12 @@ with tab4:
             y=forecast_df_custom['Projected ARR'],
             fill='tozeroy',
             name='Projected ARR',
-            line=dict(color='#1f77b4', width=3),
-            fillcolor='rgba(31, 119, 180, 0.2)'
+            line=dict(color=PRIMARY_BLUE, width=3),
+            fillcolor='rgba(31, 78, 121, 0.18)'
         ))
-        
-        fig.update_layout(
-            title="12-Month ARR Forecast",
-            xaxis_title="Months Forward",
-            yaxis_title="ARR ($M)",
-            height=400,
-            hovermode='x unified'
-        )
+
+        apply_chart_theme(fig, "12-Month ARR Forecast", "Months Forward", "ARR ($M)", 400)
+        fig.update_layout(hovermode='x unified')
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:

@@ -17,6 +17,99 @@ st.set_page_config(
 # Custom styling
 st.markdown("""
     <style>
+    :root {
+        --navy-900: #10233d;
+        --navy-700: #1f3b5c;
+        --gold-500: #d4a24c;
+        --slate-50: #f6f8fb;
+        --slate-200: #d6dce5;
+        --ink-900: #1f2937;
+    }
+    .hero-wrap {
+        background: linear-gradient(125deg, var(--navy-900), var(--navy-700));
+        color: #ffffff;
+        padding: 26px 28px;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(212, 162, 76, 0.35);
+    }
+    .hero-kicker {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #f2d8a6;
+        margin-bottom: 10px;
+    }
+    .hero-title {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin: 0 0 8px 0;
+        font-weight: 700;
+    }
+    .hero-subtitle {
+        font-size: 1.02rem;
+        margin: 0;
+        max-width: 980px;
+        opacity: 0.95;
+    }
+    .trust-strip {
+        background: #fff;
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin: 0 0 10px 0;
+        color: var(--ink-900);
+        font-size: 0.95rem;
+    }
+    .pill {
+        display: inline-block;
+        background: var(--slate-50);
+        border: 1px solid var(--slate-200);
+        border-radius: 999px;
+        padding: 4px 10px;
+        margin: 4px 6px 0 0;
+        font-size: 0.78rem;
+        color: #334155;
+        font-weight: 600;
+    }
+    .info-card {
+        background: #fff;
+        border: 1px solid var(--slate-200);
+        border-left: 4px solid var(--gold-500);
+        border-radius: 10px;
+        padding: 14px;
+        min-height: 132px;
+        margin-bottom: 6px;
+    }
+    .info-card h4 {
+        margin: 0 0 8px 0;
+        color: var(--navy-900);
+        font-size: 1rem;
+    }
+    .info-card p {
+        margin: 0;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+    .insight-card {
+        background: #fff;
+        border: 1px solid var(--slate-200);
+        border-radius: 10px;
+        padding: 12px;
+        min-height: 96px;
+    }
+    .insight-card h5 {
+        margin: 0 0 6px 0;
+        color: var(--navy-900);
+        font-size: 0.96rem;
+    }
+    .insight-card p {
+        margin: 0;
+        color: #334155;
+        font-size: 0.88rem;
+    }
     .metric-card {
         padding: 20px;
         border-radius: 8px;
@@ -43,11 +136,65 @@ def load_data():
 
 leads_df, customers_df, forecast_df = load_data()
 
-# Title and intro
-st.title("📊 Revenue Intelligence Dashboard")
-st.markdown("**Visibility across funnel, customer health, and expansion signals** to drive growth decisions.")
+# Phase 1: Executive landing layer
+st.markdown("""
+<div class='hero-wrap'>
+    <div class='hero-kicker'>Customer Success and RevOps Intelligence</div>
+    <h1 class='hero-title'>Revenue Intelligence Portfolio Dashboard</h1>
+    <p class='hero-subtitle'>
+        A personal portfolio showcase demonstrating my approach to Customer Success analytics,
+        RevOps strategy, implementation operations, and solutions engineering through one executive operating view.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class='trust-strip'>
+    <strong>Built by Harsh Joshi</strong> | Personal project showcase of decision-grade thinking across Customer Success, RevOps, implementation operations, and solutions engineering.
+    <br/>
+    <span class='pill'>Customer Success Analytics</span>
+    <span class='pill'>RevOps Analytics</span>
+    <span class='pill'>Implementation Operations</span>
+    <span class='pill'>Solutions Engineering</span>
+</div>
+""", unsafe_allow_html=True)
+
+col_a, col_b, col_c, col_d = st.columns(4)
+with col_a:
+    st.markdown("""
+    <div class='info-card'>
+        <h4>What This Project Is</h4>
+        <p>An executive-facing analytics workspace that unifies funnel, retention, expansion, and ARR forecast signals.</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col_b:
+    st.markdown("""
+    <div class='info-card'>
+        <h4>What You Do With It</h4>
+        <p>Identify pipeline bottlenecks, prioritize at-risk accounts, focus expansion plays, and pressure-test growth scenarios.</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col_c:
+    st.markdown("""
+    <div class='info-card'>
+        <h4>What It Conveys</h4>
+        <p>How operational signals connect to revenue outcomes, and where CS and implementation decisions shift trajectory.</p>
+    </div>
+    """, unsafe_allow_html=True)
+with col_d:
+    st.markdown("""
+    <div class='info-card'>
+        <h4>Why It Is Useful</h4>
+        <p>It shortens executive decision cycles by turning fragmented metrics into one practical, action-oriented view.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.info("Explore from left to right: filters define your operating context, summary insights surface what matters now, and tabs provide investigative depth.")
+
+st.caption("Methodology note: This portfolio uses realistic simulated SaaS data to demonstrate analytical thinking, decision framing, and domain execution patterns.")
 
 # Key metrics at top
+st.markdown("### Executive Snapshot")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -79,6 +226,13 @@ date_range = st.sidebar.date_input(
     key="date_range"
 )
 
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    filter_start_date = pd.to_datetime(date_range[0])
+    filter_end_date = pd.to_datetime(date_range[1])
+else:
+    filter_start_date = pd.to_datetime(date_range)
+    filter_end_date = pd.to_datetime(date_range)
+
 # Channel filter
 selected_channels = st.sidebar.multiselect(
     "Marketing Channels",
@@ -103,15 +257,67 @@ pipeline_improvement = st.sidebar.slider(
 # Filter data
 leads_filtered = leads_df[
     (leads_df['channel'].isin(selected_channels)) &
-    (leads_df['lead_date'] >= pd.to_datetime(date_range[0])) &
-    (leads_df['lead_date'] <= pd.to_datetime(date_range[1]))
+    (leads_df['lead_date'] >= filter_start_date) &
+    (leads_df['lead_date'] <= filter_end_date)
 ]
 
 customers_filtered = customers_df[
     (customers_df['segment'].isin(selected_segments)) &
-    (customers_df['start_date'] >= pd.to_datetime(date_range[0])) &
-    (customers_df['start_date'] <= pd.to_datetime(date_range[1]))
+    (customers_df['start_date'] >= filter_start_date) &
+    (customers_df['start_date'] <= filter_end_date)
 ]
+
+# Phase 1: dynamic executive insight strip
+st.markdown("### Top Insights for Current Selection")
+
+if len(leads_filtered) > 0 and len(customers_filtered) > 0:
+    n_sql_filtered = leads_filtered['is_sql'].sum()
+    n_won_filtered = leads_filtered['is_won'].sum()
+    sql_to_won = (n_won_filtered / n_sql_filtered * 100) if n_sql_filtered > 0 else 0
+
+    at_risk_customers = customers_filtered[customers_filtered['churn_risk'] > 70]
+    at_risk_share = (len(at_risk_customers) / len(customers_filtered) * 100) if len(customers_filtered) > 0 else 0
+
+    expansion_view = customers_filtered[customers_filtered['is_churned'] == 0].groupby('segment').agg({
+        'arr': 'sum',
+        'expansion_arr': 'sum'
+    }).reset_index()
+
+    if len(expansion_view) > 0:
+        expansion_view['expansion_rate'] = np.where(
+            expansion_view['arr'] > 0,
+            expansion_view['expansion_arr'] / expansion_view['arr'] * 100,
+            0
+        )
+        top_segment_row = expansion_view.sort_values('expansion_rate', ascending=False).iloc[0]
+        top_segment_text = f"{top_segment_row['segment']} leads expansion at {top_segment_row['expansion_rate']:.1f}% uplift."
+    else:
+        top_segment_text = "No active segment expansion signal in this selection yet."
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(f"""
+        <div class='insight-card'>
+            <h5>Pipeline Signal</h5>
+            <p>SQL→Won conversion is <strong>{sql_to_won:.1f}%</strong>. Use this as your baseline before scenario improvements.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class='insight-card'>
+            <h5>Retention Exposure</h5>
+            <p><strong>{len(at_risk_customers)}</strong> accounts are high risk ({at_risk_share:.1f}% of selected customers), indicating proactive CS intervention need.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class='insight-card'>
+            <h5>Expansion Opportunity</h5>
+            <p>{top_segment_text}</p>
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.warning("Not enough filtered data to generate executive insights. Widen date range or adjust segment/channel filters.")
 
 st.sidebar.divider()
 st.sidebar.markdown("**View detailed breakdowns in tabs below.**")

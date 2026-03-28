@@ -2,6 +2,27 @@
 
 A data-driven RevOps and Growth Analytics tool that provides real-time visibility across your SaaS funnel, customer health, expansion opportunities, and forward-looking forecasts.
 
+## Portfolio Context (For Senior Leaders)
+
+This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.
+
+On first glance, the landing screen now answers:
+- **What this project is**: A unified revenue intelligence workspace for CS and RevOps decisions
+- **What to do with it**: Prioritize pipeline, retention, and expansion actions
+- **What it conveys**: How operational patterns influence growth trajectory
+- **Why it is useful**: Faster, clearer decisions with measurable business impact
+
+## How to Evaluate This Project in 60 Seconds
+
+1. Read the landing hero and first-glance cards to understand purpose and audience fit.
+2. Review **Executive Snapshot** and **Top Insights for Current Selection** for immediate risk/opportunity framing.
+3. Use the sidebar filters to simulate different operating contexts.
+4. Open tabs to investigate funnel bottlenecks, churn drivers, expansion leverage, and forecast scenarios.
+
+## Methodology Note
+
+The app uses realistic simulated SaaS data to demonstrate analytical approach, decision framing, and domain depth in customer success, implementation operations, and RevOps workflows.
+
 ## Features
 
 **📈 Sales Funnel Analysis**

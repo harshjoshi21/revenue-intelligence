@@ -161,6 +161,7 @@ Current baseline:
 
 Release preparation checklist:
 - See [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md) for the full pre-release validation gate on `dev`.
+- Draft release notes for final cut: [V2_RELEASE_NOTES_DRAFT.md](V2_RELEASE_NOTES_DRAFT.md)
 
 ## Keep-Alive Automation (GitHub Actions)
 

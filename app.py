@@ -149,6 +149,55 @@ st.markdown("""
         background-color: #e6ffe6;
         border-left: 4px solid #44ff44;
     }
+    .benchmark-card {
+        background: #fff;
+        border: 1px solid var(--slate-200);
+        border-radius: 10px;
+        padding: 12px;
+        min-height: 118px;
+    }
+    .benchmark-title {
+        margin: 0 0 6px 0;
+        color: var(--navy-900);
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+    .benchmark-range {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+    .benchmark-value {
+        margin: 8px 0 6px 0;
+        color: #1f2937;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .signal-chip {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .signal-healthy {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .signal-watch {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .signal-action {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .benchmark-note {
+        margin: 0;
+        color: #475569;
+        font-size: 0.8rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -200,6 +249,56 @@ def format_currency(value, decimals=1):
     if absolute >= 1_000:
         return f"${amount / 1_000:.{decimals}f}k"
     return f"${amount:,.0f}"
+
+
+def get_benchmark_signal(metric_name, value):
+    """Return benchmark signal label, style class, and interpretation text."""
+    metric = metric_name.lower()
+
+    if metric == "churn":
+        if value <= 7:
+            return "Healthy", "signal-healthy", "Retention baseline is within expected range."
+        if value <= 10:
+            return "Watch", "signal-watch", "Retention is drifting and needs weekly review."
+        return "Action", "signal-action", "Escalate intervention plan for at-risk accounts."
+
+    if metric == "nrr":
+        if value >= 110:
+            return "Healthy", "signal-healthy", "Expansion and retention are compounding well."
+        if value >= 105:
+            return "Watch", "signal-watch", "Growth is stable but upside is limited."
+        return "Action", "signal-action", "Prioritize churn reduction and expansion motion."
+
+    if metric == "sql_to_won":
+        if value >= 25:
+            return "Healthy", "signal-healthy", "Late-stage conversion is at target."
+        if value >= 20:
+            return "Watch", "signal-watch", "Conversion is borderline and needs stage audit."
+        return "Action", "signal-action", "Immediate funnel-stage intervention required."
+
+    if metric == "expansion":
+        if value >= 12:
+            return "Healthy", "signal-healthy", "Expansion contribution supports NRR goals."
+        if value >= 10:
+            return "Watch", "signal-watch", "Expansion is present but below ambition."
+        return "Action", "signal-action", "Trigger focused upsell campaign this cycle."
+
+    return "Watch", "signal-watch", "Monitor trend and reassess next review cycle."
+
+
+def render_benchmark_card(title, benchmark_range, current_value_text, signal_label, signal_class, note_text):
+    st.markdown(
+        f"""
+        <div class='benchmark-card'>
+            <p class='benchmark-title'>{title}</p>
+            <p class='benchmark-range'>Benchmark: {benchmark_range}</p>
+            <p class='benchmark-value'>Current: {current_value_text}</p>
+            <span class='signal-chip {signal_class}'>{signal_label}</span>
+            <p class='benchmark-note'>{note_text}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Phase 1: Executive landing layer
 st.markdown("""
@@ -438,18 +537,31 @@ else:
     st.warning("Not enough filtered data to generate executive insights. Widen date range or adjust segment/channel filters.")
 
 st.markdown("### Benchmark Lens")
+st.caption("Compare current performance against operating benchmarks to decide whether to hold, monitor, or intervene.")
+
+if len(customers_view) > 0:
+    churn_rate_view = customers_view['is_churned'].mean() * 100
+    active_customers_view = customers_view[customers_view['is_churned'] == 0]
+    nrr_view = (active_customers_view['nrr_contribution'].mean() * 100) if len(active_customers_view) > 0 else 0
+else:
+    churn_rate_view = 0
+    nrr_view = 0
+
+expansion_ref = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if len(customers_view) > 0 and customers_view['arr'].sum() > 0 else 0
+
 bench1, bench2, bench3, bench4 = st.columns(4)
 with bench1:
-    churn_signal = "Healthy" if churn_rate < 7 else "Watch"
-    st.caption(f"Churn benchmark: 5-7% typical | Current: {churn_rate:.1f}% ({churn_signal})")
+    churn_signal, churn_class, churn_note = get_benchmark_signal("churn", churn_rate_view)
+    render_benchmark_card("Churn Rate", "5-7%", f"{churn_rate_view:.1f}%", churn_signal, churn_class, churn_note)
 with bench2:
-    nrr_signal = "Strong" if nrr >= 110 else "Needs lift"
-    st.caption(f"NRR benchmark: 105-115% | Current: {nrr:.0f}% ({nrr_signal})")
+    nrr_signal, nrr_class, nrr_note = get_benchmark_signal("nrr", nrr_view)
+    render_benchmark_card("NRR", "105-115%", f"{nrr_view:.0f}%", nrr_signal, nrr_class, nrr_note)
 with bench3:
-    st.caption(f"SQL->Won benchmark: 20-30% | Current: {sql_to_won:.1f}%")
+    sql_signal, sql_class, sql_note = get_benchmark_signal("sql_to_won", sql_to_won)
+    render_benchmark_card("SQL to Won", "20-30%", f"{sql_to_won:.1f}%", sql_signal, sql_class, sql_note)
 with bench4:
-    expansion_ref = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if len(customers_view) > 0 and customers_view['arr'].sum() > 0 else 0
-    st.caption(f"Expansion benchmark: 10-20% | Current: {expansion_ref:.1f}%")
+    expansion_signal, expansion_class, expansion_note = get_benchmark_signal("expansion", expansion_ref)
+    render_benchmark_card("Expansion Rate", "10-20%", f"{expansion_ref:.1f}%", expansion_signal, expansion_class, expansion_note)
 
 st.sidebar.divider()
 st.sidebar.markdown("**View detailed breakdowns in tabs below.**")
@@ -505,19 +617,52 @@ with tab1:
         }
         
         funnel_df = pd.DataFrame(funnel_data)
+
+        stage_names = funnel_data['Stage']
+        stage_counts = funnel_data['Count']
+        stage_drops = []
+        for idx in range(len(stage_names) - 1):
+            from_count = stage_counts[idx]
+            to_count = stage_counts[idx + 1]
+            conversion_pct = (to_count / from_count * 100) if from_count > 0 else 0
+            drop_pct = 100 - conversion_pct
+            stage_drops.append({
+                'from_stage': stage_names[idx],
+                'to_stage': stage_names[idx + 1],
+                'from_count': from_count,
+                'to_count': to_count,
+                'conversion_pct': conversion_pct,
+                'drop_pct': drop_pct
+            })
+
+        bottleneck = max(stage_drops, key=lambda row: row['drop_pct']) if stage_drops else None
+
+        funnel_colors = [PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, RISK_RED]
+        if bottleneck:
+            bottleneck_index = stage_names.index(bottleneck['to_stage'])
+            if 0 <= bottleneck_index < len(funnel_colors):
+                funnel_colors[bottleneck_index] = RISK_RED
         
         fig = go.Figure(data=[
             go.Funnel(
                 y=funnel_df['Stage'],
                 x=funnel_df['Count'],
                 textposition="inside",
-                textinfo="value+percent initial",
-                marker=dict(color=[PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, RISK_RED])
+                texttemplate="%{label}<br>%{value:,}",
+                hovertemplate="<b>%{label}</b><br>Count: %{value:,}<br>Of initial: %{percentInitial:.1%}<extra></extra>",
+                marker=dict(color=funnel_colors)
             )
         ])
 
         apply_chart_theme(fig, "Pipeline Funnel (by Stage)", height=400)
         st.plotly_chart(fig, use_container_width=True)
+
+        if bottleneck:
+            st.warning(
+                f"Biggest conversion drop: **{bottleneck['from_stage']} to {bottleneck['to_stage']}** "
+                f"({bottleneck['drop_pct']:.1f}% drop, {bottleneck['conversion_pct']:.1f}% conversion). "
+                "Prioritize process fixes at this handoff first."
+            )
     
     with col2:
         st.metric("Total Pipeline Value", format_currency(n_opp * 75000, decimals=1))

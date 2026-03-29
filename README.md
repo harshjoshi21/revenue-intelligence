@@ -57,6 +57,7 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 
 **📈 Sales Funnel Analysis**
 - Visualize conversion rates at each stage (Leads → MQLs → SQLs → Opportunities → Won)
+- Auto-identify the largest stage-to-stage conversion drop for immediate intervention
 - Identify stuck deals by marketing channel
 - Drill down into specific channels to see individual opportunities
 
@@ -75,6 +76,10 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 - 12-month forward projection based on churn and expansion trends
 - What-if scenarios: test impact of improving sales conversion
 - Forecast adjusts automatically with your filters
+
+**🎯 Benchmark Lens Interpretation**
+- Compare Churn, NRR, SQL→Won, and Expansion against target benchmark ranges
+- Use status signals (Healthy, Watch, Action) to quickly decide where intervention is needed
 
 ## Key Metrics at a Glance
 

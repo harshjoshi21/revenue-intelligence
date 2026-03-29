@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # Page config
 st.set_page_config(
-    page_title="Revenue Intelligence Dashboard",
+    page_title="Customer Lifecycle Intelligence",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -26,12 +26,17 @@ st.markdown("""
         --ink-900: #1f2937;
     }
     .hero-wrap {
-        background: linear-gradient(125deg, var(--navy-900), var(--navy-700));
-        color: #ffffff;
-        padding: 26px 28px;
+        background: #ffffff;
+        color: var(--ink-900);
+        padding: 20px 24px;
         border-radius: 14px;
-        margin-bottom: 12px;
-        border: 1px solid rgba(212, 162, 76, 0.35);
+        margin-bottom: 16px;
+        border: 1px solid transparent;
+        box-shadow: 0 8px 20px rgba(16, 35, 61, 0.06);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
     }
     .hero-kicker {
         display: inline-block;
@@ -39,20 +44,60 @@ st.markdown("""
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #f2d8a6;
+        color: #8a641b;
+        background: #fef4dc;
+        border: 1px solid #f3ddb4;
+        border-radius: 999px;
+        padding: 4px 10px;
         margin-bottom: 10px;
     }
-    .hero-title {
-        font-size: 2rem;
-        line-height: 1.2;
-        margin: 0 0 8px 0;
-        font-weight: 700;
+    .hero-stack {
+        margin: 0 !important;
+        padding: 0 !important;
+        display: grid;
+        row-gap: 6px;
+        width: 100%;
+        text-align: left;
     }
-    .hero-subtitle {
-        font-size: 1.02rem;
-        margin: 0;
-        max-width: 980px;
-        opacity: 0.95;
+    .hero-title-line {
+        display: block;
+        font-size: 2.25rem;
+        line-height: 1.15;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-weight: 700;
+        color: var(--navy-900);
+        text-align: left;
+        width: 100%;
+        transform: translateX(-1px);
+    }
+    .hero-subtitle-line {
+        display: block;
+        font-size: 1rem;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 900px;
+        color: #334155;
+        line-height: 1.3;
+        text-align: left;
+        width: 100%;
+    }
+    .hero-byline-line {
+        display: block;
+        font-size: 0.87rem;
+        margin: 4px 0 0 0 !important;
+        padding: 0 !important;
+        color: #475569;
+        font-weight: 600;
+        line-height: 1.25;
+        text-align: left;
+        width: 100%;
+    }
+    .hero-byline-line a {
+        color: #475569;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        font-weight: 700;
     }
     .profile-panel {
         background: #fff;
@@ -98,9 +143,12 @@ st.markdown("""
         border: 1px solid var(--slate-200);
         border-left: 4px solid var(--gold-500);
         border-radius: 10px;
-        padding: 14px;
-        min-height: 132px;
-        margin-bottom: 6px;
+        padding: 16px 16px 22px;
+        height: 176px;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
     .info-card h4 {
         margin: 0 0 8px 0;
@@ -111,13 +159,18 @@ st.markdown("""
         margin: 0;
         color: #334155;
         font-size: 0.9rem;
+        line-height: 1.35;
+        flex: 1;
     }
     .insight-card {
         background: #fff;
         border: 1px solid var(--slate-200);
         border-radius: 10px;
         padding: 12px;
-        min-height: 96px;
+        height: 118px;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
     }
     .insight-card h5 {
         margin: 0 0 6px 0;
@@ -128,6 +181,8 @@ st.markdown("""
         margin: 0;
         color: #334155;
         font-size: 0.88rem;
+        line-height: 1.35;
+        flex: 1;
     }
     .section-note {
         font-size: 0.86rem;
@@ -154,7 +209,7 @@ st.markdown("""
         border: 1px solid var(--slate-200);
         border-radius: 10px;
         padding: 12px;
-        min-height: 118px;
+        min-height: 122px;
     }
     .benchmark-title {
         margin: 0 0 6px 0;
@@ -200,7 +255,7 @@ st.markdown("""
     }
     .section-header-wrap {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 12px;
         border-bottom: 2px solid rgba(212, 162, 76, 0.45);
         padding-bottom: 10px;
@@ -208,13 +263,13 @@ st.markdown("""
     }
     .section-header-icon {
         font-size: 1.35rem;
-        line-height: 1.2;
-        margin-top: 2px;
+        line-height: 1;
+        margin-top: 0;
     }
     .section-header-title {
         margin: 0;
         color: var(--navy-900);
-        font-size: 1.2rem;
+        font-size: 1.34rem;
         font-weight: 700;
     }
     .section-header-desc {
@@ -226,8 +281,8 @@ st.markdown("""
         background: #fff8e8;
         border-left: 4px solid var(--gold-500);
         border-radius: 8px;
-        padding: 10px 12px;
-        margin: 0 0 12px 0;
+        padding: 12px;
+        margin: 0 0 14px 0;
         color: #4b5563;
         font-size: 0.86rem;
     }
@@ -236,13 +291,36 @@ st.markdown("""
         color: #64748b;
         font-size: 0.82rem;
     }
+    .quick-win-callout {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-left: 4px solid #16a34a;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-top: 16px;
+        margin-bottom: 14px;
+        color: #14532d;
+    }
+    .quick-win-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    .quick-win-move {
+        margin: 8px 0 0 0;
+        font-size: 0.88rem;
+        color: #166534;
+    }
     .playbook-card {
         background: #ffffff;
         border: 1px solid var(--slate-200);
         border-radius: 12px;
-        padding: 14px;
-        min-height: 250px;
-        margin-bottom: 10px;
+        padding: 18px 18px 10px;
+        height: 410px;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 14px;
+        overflow: visible;
     }
     .playbook-critical {
         border-left: 5px solid #c0392b;
@@ -252,30 +330,75 @@ st.markdown("""
         border-left: 5px solid #d97706;
         background: #fffbeb;
     }
+    .playbook-monitor {
+        border-left: 5px solid #2563eb;
+        background: #eff6ff;
+    }
     .playbook-priority {
         margin: 0;
         font-size: 0.78rem;
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
+    }
+    .playbook-critical .playbook-priority {
+        color: #7f1d1d;
+    }
+    .playbook-high .playbook-priority {
         color: #7c2d12;
     }
+    .playbook-monitor .playbook-priority {
+        color: #1d4ed8;
+    }
     .playbook-signal {
-        margin: 6px 0 8px 0;
+        margin: 8px 0 10px 0;
         font-size: 1rem;
+        line-height: 1.3;
         color: #111827;
         font-weight: 700;
     }
     .playbook-line {
-        margin: 4px 0;
+        margin: 6px 0;
         color: #374151;
-        font-size: 0.84rem;
+        font-size: 0.86rem;
+        line-height: 1.4;
     }
     .playbook-impact {
-        margin-top: 10px;
-        color: #991b1b;
-        font-size: 0.88rem;
+        margin-top: 8px;
+        padding-top: 8px;
+        font-size: 0.9rem;
+        line-height: 1.35;
         font-weight: 700;
+    }
+    .playbook-critical .playbook-impact {
+        color: #991b1b;
+    }
+    .playbook-high .playbook-impact {
+        color: #92400e;
+    }
+    .playbook-monitor .playbook-impact {
+        color: #1e40af;
+    }
+    div[data-baseweb="tab-list"] {
+        gap: 8px;
+        padding-bottom: 10px;
+        margin-bottom: 8px;
+    }
+    button[data-baseweb="tab"] {
+        border: 1px solid var(--slate-200) !important;
+        border-radius: 10px 10px 0 0 !important;
+        background: #f8fafc !important;
+        padding: 10px 14px !important;
+    }
+    button[data-baseweb="tab"] p {
+        font-size: 1.02rem !important;
+        font-weight: 700 !important;
+        color: var(--navy-900) !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: #e8f0fb !important;
+        border-color: #9bb6d8 !important;
+        box-shadow: inset 0 -2px 0 var(--gold-500);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -380,55 +503,351 @@ def render_benchmark_card(title, benchmark_range, current_value_text, signal_lab
     )
 
 
-def calculate_action_impacts(leads_view, customers_view):
-    """Estimate retention, pipeline, and expansion upside from current filtered context."""
+def derive_operating_metrics(leads_view, customers_view):
+    """Derive one canonical KPI payload for benchmark lens, quick win, and playbook."""
     active_customers = customers_view[customers_view['is_churned'] == 0]
     at_risk_customers = customers_view[customers_view['churn_risk'] > 70]
 
-    at_risk_arr = at_risk_customers['arr'].sum()
-    retention_value = at_risk_arr * 0.50  # Assume 50% recovery on high-risk ARR with intervention.
-
     sql_count = int(leads_view['is_sql'].sum())
     won_count = int(leads_view['is_won'].sum())
-    target_won_count = int(np.ceil(sql_count * 0.25))
-    additional_wins_needed = max(target_won_count - won_count, 0)
-    pipeline_value = additional_wins_needed * 75_000
+    sql_to_won = (won_count / sql_count * 100) if sql_count > 0 else 0
 
+    total_customers = len(customers_view)
+    at_risk_count = len(at_risk_customers)
+    at_risk_pct = (at_risk_count / total_customers * 100) if total_customers > 0 else 0
+
+    total_arr = customers_view['arr'].sum()
     active_arr = active_customers['arr'].sum()
     current_expansion = active_customers['expansion_arr'].sum()
-    target_expansion = active_arr * 0.12
-    expansion_value = max(target_expansion - current_expansion, 0)
+    expansion_pct = (customers_view['expansion_arr'].sum() / total_arr * 100) if total_arr > 0 else 0
 
+    churn_rate = customers_view['is_churned'].mean() * 100 if total_customers > 0 else 0
     current_nrr = (active_customers['nrr_contribution'].mean() * 100) if len(active_customers) > 0 else 0
-    expansion_nrr_lift = (expansion_value / active_arr * 100) if active_arr > 0 else 0
-    projected_nrr = current_nrr + expansion_nrr_lift
+
+    avg_won_arr = leads_view[leads_view['is_won'] == 1]['arr'].mean() if won_count > 0 else np.nan
+    avg_won_arr = float(avg_won_arr) if not pd.isna(avg_won_arr) and avg_won_arr > 0 else 75_000
+
+    expansion_ready_arr = active_customers[active_customers['churn_risk'] <= 70]['arr'].sum()
+
+    has_customer_data = total_customers > 0
+    has_pipeline_data = sql_count > 0
+    has_expansion_data = active_arr > 0 and total_arr > 0
+
+    return {
+        'sql_count': sql_count,
+        'won_count': won_count,
+        'sql_to_won': sql_to_won,
+        'total_customers': total_customers,
+        'at_risk_count': at_risk_count,
+        'at_risk_pct': at_risk_pct,
+        'at_risk_arr': at_risk_customers['arr'].sum(),
+        'churn_rate': churn_rate,
+        'current_nrr': current_nrr,
+        'total_arr': total_arr,
+        'active_arr': active_arr,
+        'current_expansion': current_expansion,
+        'expansion_pct': expansion_pct,
+        'avg_won_arr': avg_won_arr,
+        'expansion_ready_arr': expansion_ready_arr,
+        'has_customer_data': has_customer_data,
+        'has_pipeline_data': has_pipeline_data,
+        'has_expansion_data': has_expansion_data
+    }
+
+
+def get_action_priority(action_key, metrics):
+    """Map each action to Critical, High, or Monitor based on directional thresholds."""
+    if action_key == 'churn':
+        if not metrics.get('has_customer_data', False):
+            return 'Monitor'
+
+        if metrics['at_risk_pct'] > 20:
+            at_risk_priority = 'Critical'
+        elif metrics['at_risk_pct'] > 15:
+            at_risk_priority = 'High'
+        else:
+            at_risk_priority = 'Monitor'
+
+        churn_rate = metrics.get('churn_rate', 0)
+        if churn_rate > 10:
+            churn_rate_priority = 'Critical'
+        elif churn_rate > 7:
+            churn_rate_priority = 'High'
+        else:
+            churn_rate_priority = 'Monitor'
+
+        priority_rank = {'Monitor': 0, 'High': 1, 'Critical': 2}
+        return at_risk_priority if priority_rank[at_risk_priority] >= priority_rank[churn_rate_priority] else churn_rate_priority
+
+    if action_key == 'pipeline':
+        if not metrics.get('has_pipeline_data', False):
+            return 'Monitor'
+        if metrics['sql_to_won'] < 20:
+            return 'Critical'
+        if metrics['sql_to_won'] < 25:
+            return 'High'
+        return 'Monitor'
+
+    if action_key == 'expansion':
+        if not metrics.get('has_expansion_data', False):
+            return 'Monitor'
+        if metrics['expansion_pct'] < 10:
+            return 'Critical'
+        if metrics['expansion_pct'] < 12:
+            return 'High'
+        return 'Monitor'
+
+    return 'Monitor'
+
+
+def calculate_action_impacts(leads_view, customers_view, metrics=None):
+    """Estimate intervention upside while separating maintain-state guidance from urgent actions."""
+    if metrics is None:
+        metrics = derive_operating_metrics(leads_view, customers_view)
+
+    churn_priority = get_action_priority('churn', metrics)
+    pipeline_priority = get_action_priority('pipeline', metrics)
+    expansion_priority = get_action_priority('expansion', metrics)
+
+    if churn_priority == 'Monitor':
+        retention_value = 0
+        if not metrics.get('has_customer_data', False):
+            retention_label = "Insufficient customer sample in current filters to estimate churn exposure reliably."
+            retention_quick_win = "Broaden date or segment filters to restore a representative customer health baseline."
+        else:
+            retention_label = (
+                "Retention is operating within control bands. Maintain weekly risk reviews and preserve "
+                "proactive success coverage."
+            )
+            retention_quick_win = "Maintain current retention cadence and monitor emerging high-risk accounts weekly."
+    else:
+        retention_value = metrics['at_risk_arr'] * 0.50
+        if retention_value > 0:
+            retention_label = (
+                f"Protect up to {format_currency(retention_value, decimals=2)} ARR if 50% of at-risk accounts are retained."
+            )
+        else:
+            retention_label = (
+                "Observed churn is above benchmark and requires root-cause intervention, even though the current "
+                "high-risk ARR pool is limited in this filter view."
+            )
+        retention_quick_win = "Start a 48-hour rescue motion for highest-risk accounts and confirm root causes."
+
+    if pipeline_priority == 'Monitor':
+        pipeline_value = 0
+        if not metrics.get('has_pipeline_data', False):
+            pipeline_label = "Insufficient SQL volume in current filters to estimate conversion pressure reliably."
+            pipeline_quick_win = "Broaden date or channel scope to recover enough SQL volume for a reliable conversion read."
+        else:
+            pipeline_label = (
+                "Pipeline conversion is at or above the 25% aspirational target. Maintain stage discipline and "
+                "run light optimization experiments."
+            )
+            pipeline_quick_win = "Maintain stage handoff discipline and review conversion quality in weekly ops cadence."
+    else:
+        target_won_count = int(np.ceil(metrics['sql_count'] * 0.25))
+        additional_wins_needed = max(target_won_count - metrics['won_count'], 0)
+        pipeline_value = additional_wins_needed * metrics['avg_won_arr']
+        pipeline_label = (
+            f"Add up to {format_currency(pipeline_value, decimals=2)} ARR by lifting SQL to Won to 25% "
+            f"(using current average won ARR of {format_currency(metrics['avg_won_arr'], decimals=1)})."
+        )
+        pipeline_quick_win = "Run a 72-hour stage handoff audit and recover stalled SQL follow-through this week."
+
+    target_expansion = metrics['active_arr'] * 0.12
+    if expansion_priority == 'Monitor':
+        if not metrics.get('has_expansion_data', False):
+            expansion_value = 0
+            expansion_label = "Insufficient active ARR context in current filters to estimate expansion opportunity reliably."
+            expansion_quick_win = "Broaden date or segment scope to recover enough active ARR for expansion analysis."
+        else:
+            expansion_value = metrics['expansion_ready_arr'] * 0.03
+            expansion_target_phrase = "above 12%" if metrics['expansion_pct'] > 12 else "at 12%"
+            if expansion_value > 0:
+                expansion_label = (
+                    f"Expansion is {expansion_target_phrase}. Maintain momentum and optionally unlock about "
+                    f"{format_currency(expansion_value, decimals=2)} ARR through next-step upsell on healthy accounts."
+                )
+            else:
+                expansion_label = (
+                    f"Expansion is {expansion_target_phrase}. Maintain current expansion motion and monitor for "
+                    "new upsell-ready cohorts."
+                )
+            expansion_quick_win = "Maintain quarterly expansion planning and track top expansion-ready accounts."
+    else:
+        expansion_value = max(target_expansion - metrics['current_expansion'], 0)
+        expansion_nrr_lift = (expansion_value / metrics['active_arr'] * 100) if metrics['active_arr'] > 0 else 0
+        projected_nrr = metrics['current_nrr'] + expansion_nrr_lift
+        expansion_label = (
+            f"Capture up to {format_currency(expansion_value, decimals=2)} ARR by moving expansion to 12% "
+            f"(potential NRR path: {projected_nrr:.1f}%)."
+        )
+        expansion_quick_win = "Prioritize top expansion-ready accounts and launch tailored upsell plays."
 
     impact_rows = [
         {
+            'key': 'churn',
             'signal': 'High churn exposure',
+            'priority': churn_priority,
             'impact_value': retention_value,
-            'impact_label': f"Protect up to {format_currency(retention_value, decimals=2)} ARR if 50% of at-risk accounts are retained.",
-            'quick_win': 'Launch 48-hour rescue plan for highest-risk accounts.'
+            'impact_label': retention_label,
+            'quick_win': retention_quick_win,
+            'quick_win_eligible': churn_priority != 'Monitor'
         },
         {
+            'key': 'pipeline',
             'signal': 'Pipeline conversion pressure',
+            'priority': pipeline_priority,
             'impact_value': pipeline_value,
-            'impact_label': f"Add up to {format_currency(pipeline_value, decimals=2)} ARR by lifting SQL to Won to 25%.",
-            'quick_win': 'Run stage handoff audit and recover stalled SQL follow-through this week.'
+            'impact_label': pipeline_label,
+            'quick_win': pipeline_quick_win,
+            'quick_win_eligible': pipeline_priority != 'Monitor'
         },
         {
+            'key': 'expansion',
             'signal': 'Expansion underperformance',
+            'priority': expansion_priority,
             'impact_value': expansion_value,
-            'impact_label': (
-                f"Capture up to {format_currency(expansion_value, decimals=2)} ARR by moving expansion to 12% "
-                f"(projected NRR {projected_nrr:.1f}%)."
-            ),
-            'quick_win': 'Prioritize top expansion-ready accounts and launch tailored upsell plays.'
+            'impact_label': expansion_label,
+            'quick_win': expansion_quick_win,
+            'quick_win_eligible': expansion_priority != 'Monitor'
         }
     ]
 
-    quick_win = max(impact_rows, key=lambda row: row['impact_value']) if impact_rows else None
+    quick_win_candidates = [
+        row for row in impact_rows
+        if row['quick_win_eligible'] and row['impact_value'] > 0
+    ]
+    quick_win = max(quick_win_candidates, key=lambda row: row['impact_value']) if quick_win_candidates else None
     return impact_rows, quick_win
+
+
+def build_playbook_rows(metrics, impact_by_key):
+    """Build playbook rows from canonical priority mapping."""
+    churn_priority = get_action_priority('churn', metrics)
+    churn_rate = metrics.get('churn_rate', 0)
+    if not metrics.get('has_customer_data', False):
+        churn_signal = 'Retention signal unavailable'
+        churn_trigger = 'No customers in the current filter context.'
+        churn_sla = 'Broaden filters before assigning retention owners'
+    elif churn_priority == 'Critical':
+        churn_signal = 'Retention at intervention level'
+        churn_reasons = []
+        if metrics['at_risk_pct'] > 20:
+            churn_reasons.append(
+                f"at-risk share {metrics['at_risk_pct']:.1f}% exceeds 20% "
+                f"({metrics['at_risk_count']} of {metrics['total_customers']} accounts)"
+            )
+        if churn_rate > 10:
+            churn_reasons.append(f"observed churn rate {churn_rate:.1f}% is above 10% action threshold")
+        churn_trigger = " and ".join(churn_reasons) + "."
+        churn_sla = 'Launch owner outreach within 48 hours'
+    elif churn_priority == 'High':
+        churn_signal = 'Retention gap requiring action'
+        churn_reasons = []
+        if metrics['at_risk_pct'] > 15:
+            churn_reasons.append(
+                f"at-risk share {metrics['at_risk_pct']:.1f}% is above 15% early-warning "
+                f"({metrics['at_risk_count']} of {metrics['total_customers']} accounts)"
+            )
+        if churn_rate > 7:
+            churn_reasons.append(f"observed churn rate {churn_rate:.1f}% is above the 7% benchmark ceiling")
+        churn_trigger = " and ".join(churn_reasons) + "."
+        churn_sla = 'Launch focused outreach and churn root-cause review within 5 business days'
+    else:
+        churn_signal = 'Retention operating in control'
+        churn_trigger = (
+            f"At-risk share {metrics['at_risk_pct']:.1f}% is within <=15% and observed churn rate "
+            f"{churn_rate:.1f}% is within <=7% control bands."
+        )
+        churn_sla = 'Review risk cohort weekly'
+
+    pipeline_priority = get_action_priority('pipeline', metrics)
+    if not metrics.get('has_pipeline_data', False):
+        pipeline_signal = 'Pipeline signal unavailable'
+        pipeline_trigger = 'No SQLs in the current filter context.'
+        pipeline_sla = 'Broaden filters before assigning pipeline intervention'
+    elif pipeline_priority == 'Critical':
+        pipeline_signal = 'Pipeline conversion intervention required'
+        pipeline_trigger = (
+            f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is below 20% intervention floor "
+            f"and materially off the 25% aspiration."
+        )
+        pipeline_sla = 'Run stage audit in 72 hours'
+    elif pipeline_priority == 'High':
+        pipeline_signal = 'Pipeline conversion below target'
+        pipeline_trigger = (
+            f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is in the 20-25% watch band and below 25% aspiration."
+        )
+        pipeline_sla = 'Complete stage audit and recovery plan within 5 business days'
+    else:
+        pipeline_signal = 'Pipeline conversion on target'
+        pipeline_trigger = (
+            f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is at or above 25% aspirational target."
+        )
+        pipeline_sla = 'Maintain weekly stage hygiene and monthly calibration'
+
+    expansion_priority = get_action_priority('expansion', metrics)
+    if not metrics.get('has_expansion_data', False):
+        expansion_signal = 'Expansion signal unavailable'
+        expansion_trigger = 'No active ARR context in the current filter selection.'
+        expansion_sla = 'Broaden filters before assigning expansion execution'
+    elif expansion_priority == 'Critical':
+        expansion_signal = 'Expansion gap at intervention level'
+        expansion_trigger = (
+            f"Expansion rate {metrics['expansion_pct']:.1f}% is below the 10% critical threshold "
+            f"(target 12%)."
+        )
+        expansion_sla = 'Prioritize top 20 expansion candidates in 7 days'
+    elif expansion_priority == 'High':
+        expansion_signal = 'Expansion below strategic target'
+        expansion_trigger = (
+            f"Expansion rate {metrics['expansion_pct']:.1f}% is in the 10-12% watch band and below 12% target."
+        )
+        expansion_sla = 'Launch focused upsell sprint within 10 business days'
+    else:
+        expansion_signal = 'Expansion operating above target'
+        if metrics['expansion_pct'] > 12:
+            expansion_trigger = f"Expansion rate {metrics['expansion_pct']:.1f}% is above 12% target."
+        else:
+            expansion_trigger = f"Expansion rate {metrics['expansion_pct']:.1f}% is at 12% target."
+        expansion_sla = 'Maintain monthly expansion planning cadence'
+
+    return [
+        {
+            'action_key': 'churn',
+            'Priority': churn_priority,
+            'Signal': churn_signal,
+            'Trigger': churn_trigger,
+            'Recommended Owner': 'Customer Success Manager',
+            'Suggested SLA': churn_sla,
+            'Immediate Action': impact_by_key['churn']['quick_win'],
+            'Projected Impact': impact_by_key['churn']['impact_label'],
+            'execution_order': 1
+        },
+        {
+            'action_key': 'pipeline',
+            'Priority': pipeline_priority,
+            'Signal': pipeline_signal,
+            'Trigger': pipeline_trigger,
+            'Recommended Owner': 'RevOps + Sales Leadership',
+            'Suggested SLA': pipeline_sla,
+            'Immediate Action': impact_by_key['pipeline']['quick_win'],
+            'Projected Impact': impact_by_key['pipeline']['impact_label'],
+            'execution_order': 2
+        },
+        {
+            'action_key': 'expansion',
+            'Priority': expansion_priority,
+            'Signal': expansion_signal,
+            'Trigger': expansion_trigger,
+            'Recommended Owner': 'CS Leadership + Account Strategy',
+            'Suggested SLA': expansion_sla,
+            'Immediate Action': impact_by_key['expansion']['quick_win'],
+            'Projected Impact': impact_by_key['expansion']['impact_label'],
+            'execution_order': 3
+        }
+    ]
 
 
 def render_section_header(icon, title, description):
@@ -448,8 +867,15 @@ def render_section_header(icon, title, description):
 
 def render_playbook_card(row):
     priority = row['Priority']
-    priority_class = "playbook-critical" if priority == "Critical" else "playbook-high"
-    priority_icon = "🔴" if priority == "Critical" else "🟠"
+    if priority == "Critical":
+        priority_class = "playbook-critical"
+        priority_icon = "🔴"
+    elif priority == "High":
+        priority_class = "playbook-high"
+        priority_icon = "🟠"
+    else:
+        priority_class = "playbook-monitor"
+        priority_icon = "🔵"
 
     st.markdown(
         f"""
@@ -469,24 +895,12 @@ def render_playbook_card(row):
 # Phase 1: Executive landing layer
 st.markdown("""
 <div class='hero-wrap'>
-    <div class='hero-kicker'>Customer Success and RevOps Intelligence</div>
-    <h1 class='hero-title'>Revenue Intelligence Portfolio Dashboard</h1>
-    <p class='hero-subtitle'>
-        A personal portfolio showcase demonstrating my approach to Customer Success analytics,
-        RevOps strategy, implementation operations, and solutions engineering through one executive operating view.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class='profile-panel'>
-    <div class='profile-label'>Professional Profile</div>
-    <div class='profile-title'>Harsh Joshi | Revenue and Customer Success Analytics Portfolio</div>
-    <p class='profile-text'>Personal showcase of structured, decision-oriented thinking across Customer Success, RevOps, implementation operations, and solutions engineering.</p>
-    <span class='pill'>Customer Success Analytics</span>
-    <span class='pill'>RevOps Analytics</span>
-    <span class='pill'>Implementation Operations</span>
-    <span class='pill'>Solutions Engineering</span>
+    <div class='hero-kicker'>Customer Success x Growth Analytics</div>
+    <div class='hero-stack'>
+        <span class='hero-title-line'>Customer Lifecycle Intelligence</span>
+        <span class='hero-subtitle-line'>Predictive Analytics for Retention, Expansion, and Revenue Decisions</span>
+        <span class='hero-byline-line'>Built by <a href='https://www.linkedin.com/in/harshjoshi21/' target='_blank' rel='noopener noreferrer'>Harsh Joshi</a></span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -495,38 +909,46 @@ with col_a:
     st.markdown("""
     <div class='info-card'>
         <h4>What This Project Is</h4>
-        <p>An executive-facing analytics workspace that unifies funnel, retention, expansion, and ARR forecast signals.</p>
+        <p>A unified operating layer that connects lifecycle signals to Customer Success and Growth priorities.</p>
     </div>
     """, unsafe_allow_html=True)
 with col_b:
     st.markdown("""
     <div class='info-card'>
         <h4>What You Do With It</h4>
-        <p>Identify pipeline bottlenecks, prioritize at-risk accounts, focus expansion plays, and pressure-test growth scenarios.</p>
+        <p>Identify conversion bottlenecks, prioritize at-risk accounts, focus expansion plays, and stress-test growth scenarios.</p>
     </div>
     """, unsafe_allow_html=True)
 with col_c:
     st.markdown("""
     <div class='info-card'>
         <h4>What It Conveys</h4>
-        <p>How operational signals connect to revenue outcomes, and where CS and implementation decisions shift trajectory.</p>
+        <p>How customer behavior and operating process quality shape retention, expansion, and revenue trajectory.</p>
     </div>
     """, unsafe_allow_html=True)
 with col_d:
     st.markdown("""
     <div class='info-card'>
         <h4>Why It Is Useful</h4>
-        <p>It shortens executive decision cycles by turning fragmented metrics into one practical, action-oriented view.</p>
+        <p>It helps CS and Growth move in sync, reducing handoff friction and accelerating high-impact action.</p>
     </div>
     """, unsafe_allow_html=True)
 
-st.info("Explore from left to right: filters define your operating context, summary insights surface what matters now, and tabs provide investigative depth.")
+st.markdown(
+    """
+    <div class='context-callout'>
+        <strong>Methodology:</strong> This project uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes.
+        Assumptions are transparent so leaders can validate drivers, calibrate confidence, and translate insights into owner-level execution.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-st.caption("Methodology note: This portfolio uses realistic simulated SaaS data to demonstrate analytical thinking, decision framing, and domain execution patterns.")
+st.info("Navigation guide: Start with sidebar filters to set your operating context, scan the executive signals at the top, then open each tab for deeper analysis.")
 
-with st.expander("🧭 Evaluator Walkthrough (2 minutes)", expanded=False):
+with st.expander("🧭 Evaluator Walkthrough (2 minutes)", expanded=True):
     st.markdown("**1) Understand portfolio intent (20 sec)**")
-    st.markdown("Read the hero, profile panel, and first-glance cards to see the strategic framing and domain scope.")
+    st.markdown("Read the hero title, methodology note, and first-glance cards to see the strategic framing and analytical intent.")
     st.markdown("**2) Scan executive signals (30 sec)**")
     st.markdown("Use Executive Snapshot and Top Insights to identify immediate risk/opportunity themes.")
     st.markdown("**3) Stress-test context (30 sec)**")
@@ -534,7 +956,7 @@ with st.expander("🧭 Evaluator Walkthrough (2 minutes)", expanded=False):
     st.markdown("**4) Validate actionability (40 sec)**")
     st.markdown("Open Action Playbook to map data signals to owner, SLA, and expected business impact.")
 
-st.markdown("### Why This Matters: Three Operating Decisions You Can Make Right Now")
+st.markdown("### What This Showcase Helps You Evaluate")
 d1, d2, d3 = st.columns(3)
 with d1:
     st.markdown("""
@@ -560,6 +982,7 @@ with d3:
 
 # Key metrics at top
 st.markdown("### Executive Snapshot")
+st.caption("Baseline portfolio view (full dataset). Selection-aware metrics and recommendations are shown below in Top Insights, Benchmark Lens, and tabs.")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -634,7 +1057,7 @@ selected_channels = st.sidebar.multiselect(
     options=leads_df['channel'].unique(),
     default=default_channels,
     key="selected_channels",
-    help="Start with top-volume channels, then isolate one source to inspect conversion bottlenecks."
+    help="Start with top-volume channels, then isolate one source to inspect conversion and customer outcomes by acquisition source."
 )
 
 # Segment filter
@@ -663,6 +1086,7 @@ leads_filtered = leads_df[
 
 customers_filtered = customers_df[
     (customers_df['segment'].isin(selected_segments)) &
+    (customers_df['channel'].isin(selected_channels)) &
     (customers_df['start_date'] >= filter_start_date) &
     (customers_df['start_date'] <= filter_end_date)
 ]
@@ -733,15 +1157,11 @@ else:
 st.markdown("### Benchmark Lens")
 st.caption("Compare current performance against operating benchmarks to decide whether to hold, monitor, or intervene.")
 
-if len(customers_view) > 0:
-    churn_rate_view = customers_view['is_churned'].mean() * 100
-    active_customers_view = customers_view[customers_view['is_churned'] == 0]
-    nrr_view = (active_customers_view['nrr_contribution'].mean() * 100) if len(active_customers_view) > 0 else 0
-else:
-    churn_rate_view = 0
-    nrr_view = 0
+operating_metrics = derive_operating_metrics(leads_view, customers_view)
+churn_rate_view = operating_metrics['churn_rate']
+nrr_view = operating_metrics['current_nrr']
 
-expansion_ref = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if len(customers_view) > 0 and customers_view['arr'].sum() > 0 else 0
+expansion_ref = operating_metrics['expansion_pct']
 
 bench1, bench2, bench3, bench4 = st.columns(4)
 with bench1:
@@ -751,17 +1171,22 @@ with bench2:
     nrr_signal, nrr_class, nrr_note = get_benchmark_signal("nrr", nrr_view)
     render_benchmark_card("NRR", "105-115%", f"{nrr_view:.0f}%", nrr_signal, nrr_class, nrr_note)
 with bench3:
-    sql_signal, sql_class, sql_note = get_benchmark_signal("sql_to_won", sql_to_won)
-    render_benchmark_card("SQL to Won", "20-30%", f"{sql_to_won:.1f}%", sql_signal, sql_class, sql_note)
+    sql_signal, sql_class, sql_note = get_benchmark_signal("sql_to_won", operating_metrics['sql_to_won'])
+    render_benchmark_card("SQL to Won", "20-30%", f"{operating_metrics['sql_to_won']:.1f}%", sql_signal, sql_class, sql_note)
 with bench4:
     expansion_signal, expansion_class, expansion_note = get_benchmark_signal("expansion", expansion_ref)
-    render_benchmark_card("Expansion Rate", "10-20%", f"{expansion_ref:.1f}%", expansion_signal, expansion_class, expansion_note)
+    render_benchmark_card("Expansion Rate", "Target: >=12% (Watch: 10-12%)", f"{expansion_ref:.1f}%", expansion_signal, expansion_class, expansion_note)
 
-impact_rows, quick_win = calculate_action_impacts(leads_view, customers_view)
+impact_rows, quick_win = calculate_action_impacts(leads_view, customers_view, operating_metrics)
 if quick_win and quick_win['impact_value'] > 0:
-    st.success(
-        f"Quick Win: **{quick_win['signal']}** can unlock up to **{format_currency(quick_win['impact_value'], decimals=2)}** ARR. "
-        f"Recommended immediate move: {quick_win['quick_win']}"
+    st.markdown(
+        f"""
+        <div class='quick-win-callout'>
+            <p class='quick-win-title'>Quick Win: {quick_win['signal']} can unlock up to {format_currency(quick_win['impact_value'], decimals=2)} ARR.</p>
+            <p class='quick-win-move'><strong>Immediate move:</strong> {quick_win['quick_win']}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 else:
     st.info("Quick Win: No high-confidence upside identified in the current filter context. Broaden scope or adjust view mode.")
@@ -795,10 +1220,13 @@ segment_axis = [segment for segment in base_segment_order if segment in present_
 
 # TAB 1: FUNNEL
 with tab1:
-    render_section_header(
-        "📈",
-        "Pipeline Risks",
-        "See where leads drop between stages, compare against conversion targets, and focus intervention on the biggest handoff leak."
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Section focus:</strong> See where leads drop between stages, compare against conversion targets, and focus intervention on the biggest handoff leak.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
     n_leads = len(leads_view)
@@ -845,52 +1273,69 @@ with tab1:
         for rate, target in zip(transition_rates, transition_targets)
     ]
 
-    col_funnel, col_rates = st.columns([1.6, 1])
+    funnel_colors = [PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, PRIMARY_BLUE]
+    if bottleneck:
+        bottleneck_index = stage_names.index(bottleneck['to_stage'])
+        if 0 <= bottleneck_index < len(funnel_colors):
+            funnel_colors[bottleneck_index] = RISK_RED
 
-    with col_funnel:
-        funnel_colors = [PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, PRIMARY_BLUE]
-        if bottleneck:
-            bottleneck_index = stage_names.index(bottleneck['to_stage'])
-            if 0 <= bottleneck_index < len(funnel_colors):
-                funnel_colors[bottleneck_index] = RISK_RED
+    initial_count = stage_counts[0] if stage_counts and stage_counts[0] > 0 else 1
+    stage_percentages = [(count / initial_count * 100) for count in stage_counts]
+    funnel_hover_data = [
+        [stage_names[idx], stage_percentages[idx]]
+        for idx in range(len(stage_names))
+    ]
 
-        funnel_fig = go.Figure(data=[
-            go.Funnel(
-                y=stage_names,
-                x=stage_counts,
-                textposition="inside",
-                texttemplate="%{label}<br>%{value:,}",
-                hovertemplate="<b>%{label}</b><br>Count: %{value:,}<br>Of initial: %{percentInitial:.1%}<extra></extra>",
-                marker=dict(color=funnel_colors)
-            )
-        ])
-        apply_chart_theme(funnel_fig, "Pipeline Volume by Stage", height=420)
-        st.plotly_chart(funnel_fig, use_container_width=True)
-
-    with col_rates:
-        rates_fig = go.Figure()
-        rates_fig.add_trace(go.Bar(
-            x=transition_labels,
-            y=transition_rates,
-            name="Current",
-            marker_color=transition_colors,
-            text=[f"{rate:.1f}%" for rate in transition_rates],
+    funnel_fig = go.Figure(data=[
+        go.Funnel(
+            y=stage_names,
+            x=stage_counts,
             textposition="outside",
-            hovertemplate="<b>%{x}</b><br>Current: %{y:.1f}%<extra></extra>"
-        ))
-        rates_fig.add_trace(go.Scatter(
-            x=transition_labels,
-            y=transition_targets,
-            mode="lines+markers",
-            name="Target",
-            line=dict(color=WARNING_AMBER, width=2, dash="dash"),
-            marker=dict(color=WARNING_AMBER, size=7),
-            hovertemplate="<b>%{x}</b><br>Target: %{y:.1f}%<extra></extra>"
-        ))
-        apply_chart_theme(rates_fig, "Stage Conversion vs Target", "Stage Transition", "Conversion Rate (%)", 420)
-        max_rate = max(transition_targets + transition_rates) if transition_rates else max(transition_targets)
-        rates_fig.update_yaxes(range=[0, max_rate + 10], ticksuffix="%")
-        st.plotly_chart(rates_fig, use_container_width=True)
+            texttemplate="%{label}: %{x:,}",
+            textfont=dict(size=13),
+            customdata=funnel_hover_data,
+            hovertemplate="<b>%{customdata[0]}</b><br>Count: %{x:,}<br>Share of total leads: %{customdata[1]:.1f}%<extra></extra>",
+            marker=dict(color=funnel_colors)
+        )
+    ])
+    apply_chart_theme(funnel_fig, "Pipeline Volume by Stage", height=480)
+    st.plotly_chart(funnel_fig, use_container_width=True)
+
+    stage_col1, stage_col2, stage_col3, stage_col4, stage_col5 = st.columns(5)
+    with stage_col1:
+        st.metric("Leads", f"{n_leads:,}")
+    with stage_col2:
+        st.metric("MQLs", f"{n_mql:,}")
+    with stage_col3:
+        st.metric("SQLs", f"{n_sql:,}")
+    with stage_col4:
+        st.metric("Opportunities", f"{n_opp:,}")
+    with stage_col5:
+        st.metric("Closed Won", f"{n_won_adjusted:,}")
+
+    rates_fig = go.Figure()
+    rates_fig.add_trace(go.Bar(
+        x=transition_labels,
+        y=transition_rates,
+        name="Current",
+        marker_color=transition_colors,
+        text=[f"{rate:.1f}%" for rate in transition_rates],
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>Current: %{y:.1f}%<extra></extra>"
+    ))
+    rates_fig.add_trace(go.Scatter(
+        x=transition_labels,
+        y=transition_targets,
+        mode="lines+markers",
+        name="Target",
+        line=dict(color=WARNING_AMBER, width=2, dash="dash"),
+        marker=dict(color=WARNING_AMBER, size=7),
+        hovertemplate="<b>%{x}</b><br>Target: %{y:.1f}%<extra></extra>"
+    ))
+    apply_chart_theme(rates_fig, "Stage Conversion vs Target", "Stage Transition", "Conversion Rate (%)", 380)
+    max_rate = max(transition_targets + transition_rates) if transition_rates else max(transition_targets)
+    rates_fig.update_yaxes(range=[0, max_rate + 10], ticksuffix="%")
+    st.plotly_chart(rates_fig, use_container_width=True)
 
     if bottleneck:
         st.warning(
@@ -900,15 +1345,28 @@ with tab1:
         )
 
     metric_col1, metric_col2, metric_col3 = st.columns(3)
+    avg_deal_assumption = operating_metrics['avg_won_arr']
     with metric_col1:
-        st.metric("Total Pipeline Value", format_currency(n_opp * 75000, decimals=1))
+        st.metric("Total Pipeline Value", format_currency(n_opp * avg_deal_assumption, decimals=1))
     with metric_col2:
-        st.metric("Expected Closed Won", format_currency(n_won_adjusted * 75000, decimals=1))
+        st.metric("Expected Closed Won", format_currency(n_won_adjusted * avg_deal_assumption, decimals=1))
     with metric_col3:
         if pipeline_improvement > 0:
-            st.metric("What-If Lift", f"+{format_currency(additional_won * 75000, decimals=1)}")
+            st.metric("What-If Lift", f"+{format_currency(additional_won * avg_deal_assumption, decimals=1)}")
         else:
             st.metric("What-If Lift", "$0")
+
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Why What-If Lift starts at $0:</strong> The baseline assumes no conversion improvement from the current operating motion.
+            When you move the sidebar What-if slider, the model increases expected closed-won opportunities from the current opportunity pool,
+            then translates those additional wins into ARR using the same deal-value assumption used in this dashboard. This gives a fast scenario view
+            of how conversion process improvements can impact near-term revenue outcomes before operational changes are launched.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.markdown("### Stuck Opportunities by Channel")
     st.markdown(
@@ -986,10 +1444,13 @@ with tab1:
 
 # TAB 2: CHURN & HEALTH
 with tab2:
-    render_section_header(
-        "⚠️",
-        "Customer Health Actions",
-        "Prioritize intervention by combining churn risk score, engagement behavior, and account value signals."
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Section focus:</strong> Prioritize intervention by combining churn risk score, engagement behavior, and account value signals.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
     st.markdown(
         """
@@ -1122,10 +1583,13 @@ with tab2:
 
 # TAB 3: EXPANSION & COHORTS
 with tab3:
-    render_section_header(
-        "💰",
-        "Expansion Levers",
-        "Track which segments drive expansion ARR now and use cohort retention to judge long-term customer quality."
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Section focus:</strong> Track which segments drive expansion ARR now and use cohort retention to judge long-term customer quality.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
     st.markdown(
         """
@@ -1211,10 +1675,13 @@ with tab3:
 
 # TAB 4: FORECAST
 with tab4:
-    render_section_header(
-        "🔮",
-        "Scenario Forecast",
-        "Model ARR outcomes under current churn and expansion assumptions, then stress-test the impact of pipeline conversion improvement."
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Section focus:</strong> Model ARR outcomes under current churn and expansion assumptions, then stress-test the impact of pipeline conversion improvement.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
     
     col1, col2 = st.columns([2, 1])
@@ -1274,59 +1741,29 @@ with tab4:
     
     st.markdown("**Key Assumptions:**")
     st.markdown(f"""
-    - Current Churn Rate: {churn_rate*100:.1f}%
-    - Current Expansion Rate: {expansion_rate*100:.1f}%
+    - Observed Churn Share (filter cohort proxy): {churn_rate*100:.1f}%
+    - Observed Expansion Share (filter cohort proxy): {expansion_rate*100:.1f}%
     - What-If Conversion Improvement: {pipeline_improvement}%
     """)
 
 # TAB 5: PLAYBOOK
 with tab5:
-    render_section_header(
-        "🎯",
-        "Action Playbook",
-        "Convert signals into owner-level execution with urgency, SLA, and projected ARR impact in one operating view."
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Section focus:</strong> Convert signals into owner-level execution with urgency, SLA, and projected ARR impact in one operating view.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    sql_to_won_now = (leads_view['is_won'].sum() / leads_view['is_sql'].sum() * 100) if leads_view['is_sql'].sum() > 0 else 0
-    at_risk_count = len(customers_view[customers_view['churn_risk'] > 70])
-    total_customers_view = len(customers_view)
-    at_risk_pct = (at_risk_count / total_customers_view * 100) if total_customers_view > 0 else 0
-    expansion_pct = (customers_view['expansion_arr'].sum() / customers_view['arr'].sum() * 100) if customers_view['arr'].sum() > 0 else 0
-
-    playbook_rows = [
-        {
-            'Priority': 'Critical' if at_risk_pct > 20 else 'High',
-            'Signal': 'High churn exposure',
-            'Trigger': f'At-risk share {at_risk_pct:.1f}% (threshold > 20%)',
-            'Recommended Owner': 'Customer Success Manager',
-            'Suggested SLA': 'Start outreach within 48 hours',
-            'Immediate Action': impact_rows[0]['quick_win'],
-            'Projected Impact': impact_rows[0]['impact_label']
-        },
-        {
-            'Priority': 'Critical' if sql_to_won_now < 20 else 'High',
-            'Signal': 'Pipeline conversion pressure',
-            'Trigger': f'SQL->Won conversion {sql_to_won_now:.1f}% (target >= 25%)',
-            'Recommended Owner': 'RevOps + Sales Leadership',
-            'Suggested SLA': 'Run stage audit this week',
-            'Immediate Action': impact_rows[1]['quick_win'],
-            'Projected Impact': impact_rows[1]['impact_label']
-        },
-        {
-            'Priority': 'Critical' if expansion_pct < 10 else 'High',
-            'Signal': 'Expansion underperformance',
-            'Trigger': f'Expansion rate {expansion_pct:.1f}% (target >= 12%)',
-            'Recommended Owner': 'CS Leadership + Account Strategy',
-            'Suggested SLA': 'Prioritize top 20 expansion candidates in 7 days',
-            'Immediate Action': impact_rows[2]['quick_win'],
-            'Projected Impact': impact_rows[2]['impact_label']
-        }
-    ]
+    impact_by_key = {row['key']: row for row in impact_rows}
+    playbook_rows = build_playbook_rows(operating_metrics, impact_by_key)
 
     playbook_df = pd.DataFrame(playbook_rows)
     playbook_order = {'Critical': 0, 'High': 1, 'Monitor': 2}
     playbook_df['priority_rank'] = playbook_df['Priority'].map(playbook_order)
-    playbook_df = playbook_df.sort_values(['priority_rank', 'Signal']).drop(columns=['priority_rank'])
+    playbook_df = playbook_df.sort_values(['priority_rank', 'execution_order']).drop(columns=['priority_rank', 'execution_order', 'action_key'])
 
     st.markdown(
         f"<p class='table-context'>Showing {len(playbook_df)} prioritized actions for the current filter context, ordered by urgency.</p>",
@@ -1340,6 +1777,7 @@ with tab5:
 
     st.markdown("**Execution Notes:**")
     st.markdown("- Review this playbook after every filter or scenario change.")
+    st.markdown("- Priority legend: Critical = intervene now, High = close a gap, Monitor = maintain current performance.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
     st.markdown("- Projected impacts are directional estimates based on the current filtered operating context.")
 

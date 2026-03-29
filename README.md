@@ -1,11 +1,11 @@
-# Revenue Intelligence Dashboard
+# Customer Lifecycle Intelligence
 
-A data-driven RevOps and Growth Analytics tool that provides real-time visibility across your SaaS funnel, customer health, expansion opportunities, and forward-looking forecasts.
+Predictive Analytics for Retention, Expansion, and Revenue Decisions
 
 ## V2 Progress Snapshot (In Development on `dev`)
 
 Completed so far:
-- **Phase 1**: Executive landing experience (hero framing, profile panel, first-glance clarity cards, dynamic insight row)
+- **Phase 1**: Executive landing experience (hero framing, first-glance clarity cards, dynamic insight row)
 - **Phase 2**: Decision-oriented analytics flow (action-focused tabs, benchmark lens, glossary, executive view mode, action playbook)
 - **Phase 3**: Visual system upgrade (shared chart theme, executive palette, improved chart readability and consistency)
 - **Phase 4**: Portfolio packaging (in-app evaluator walkthrough, decisions-enabled framing, leadership review path)
@@ -20,7 +20,7 @@ Current status:
 
 This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.
 
-## Why This Matters: Three Operating Decisions You Can Make Right Now
+## What This Showcase Helps You Evaluate
 
 This project is designed to demonstrate practical decision support, not just reporting. It helps answer:
 - Which accounts should Customer Success prioritize this week to reduce churn exposure?
@@ -30,10 +30,10 @@ This project is designed to demonstrate practical decision support, not just rep
 It also provides scenario visibility for how ARR trajectory can shift under different conversion and operating assumptions.
 
 On first glance, the landing screen now answers:
-- **What this project is**: A unified revenue intelligence workspace for CS and RevOps decisions
-- **What to do with it**: Prioritize pipeline, retention, and expansion actions
-- **What it conveys**: How operational patterns influence growth trajectory
-- **Why it is useful**: Faster, clearer decisions with measurable business impact
+- **What this project is**: A unified operating layer that connects lifecycle signals to Customer Success and Growth priorities
+- **What to do with it**: Identify conversion bottlenecks, prioritize at-risk accounts, focus expansion plays, and stress-test growth scenarios
+- **What it conveys**: How customer behavior and operating process quality shape retention, expansion, and revenue trajectory
+- **Why it is useful**: It helps CS and Growth move in sync, reducing handoff friction and accelerating high-impact action
 
 ## How to Evaluate This Project in 60 Seconds
 
@@ -44,14 +44,14 @@ On first glance, the landing screen now answers:
 
 ## How to Evaluate This Project in 2 Minutes (Leadership Review)
 
-1. **Intent and credibility (0:00-0:30)**: Read the landing hero and professional profile panel.
+1. **Intent and credibility (0:00-0:30)**: Read the landing title, methodology section, and first-glance cards.
 2. **Signal quality (0:30-1:00)**: Review Executive Snapshot, Top Insights, and Benchmark Lens.
 3. **Operational depth (1:00-1:30)**: Toggle Executive View Mode and inspect one segment/channel scenario.
 4. **Actionability (1:30-2:00)**: Use Action Playbook to connect findings to owner-level execution.
 
 ## Methodology Note
 
-The app uses realistic simulated SaaS data to demonstrate analytical approach, decision framing, and domain depth in customer success, implementation operations, and RevOps workflows.
+The app uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes. Assumptions are intentionally transparent so leaders can validate drivers, calibrate confidence, and translate insights into owner-level execution.
 
 ## Features
 
@@ -88,15 +88,16 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 - Translate each playbook action into directional ARR impact estimates for faster prioritization
 
 **🧭 Action Playbook Cards**
-- Executive-style priority cards (Critical/High) with owner, SLA, trigger, and immediate action
+- Executive-style priority cards (Critical/High/Monitor) with owner, SLA, trigger, and immediate action
+- Priority assignment is calibrated using benchmark drift and leading indicators (not severity labeling alone)
 - Projected ARR impact highlighted in each card for faster execution prioritization
 
 ## Key Metrics at a Glance
 
 - **Active Customers**: Number of current customers (not churned)
 - **Current ARR**: Total annual recurring revenue from active customers
-- **Churn Rate**: Percentage of customers lost (all-time)
-- **NRR**: Net Revenue Retention (expansion revenue / base revenue)
+- **Churn Rate**: Observed churn share in the current analysis cohort
+- **NRR**: Average account-level net retention proxy from simulated base + expansion ARR
 
 ## How to Use
 
@@ -115,7 +116,7 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum with interpretation context
 4. **Scenario Forecast**: Model ARR outcomes under different assumptions
 5. **Action Playbook**: Use priority cards to map observed signals to owner-level actions, SLA, and projected impact
-6. **Quick Win signal**: Use the highlighted top opportunity to decide what should be executed first this cycle
+6. **Quick Win Signal**: Use the highlighted top opportunity to decide what should be executed first this cycle
 
 ## Data Simulation
 
@@ -124,10 +125,10 @@ This dashboard uses realistic SaaS funnel data:
 - **200+ active customers** across 5 industry segments
 - **Deal sizes**: $15K–$200K ARR (realistic for mid-market/enterprise)
 - **Sales cycles**: 45–150 days depending on segment
-- **Churn patterns**: 8% monthly churn, influenced by engagement
-- **Expansion**: 10–50% ARR expansion from existing customers
+- **Churn patterns**: ~8% churn incidence flag in the generated cohort, with risk score influenced by engagement
+- **Expansion**: 0–50% ARR expansion sampled for active (non-churned) customers
 
-All data is statistically realistic and includes seasonality.
+All data is statistically realistic for portfolio demonstration and intentionally assumption-driven.
 
 ## Use Cases
 

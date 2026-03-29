@@ -198,22 +198,84 @@ st.markdown("""
         color: #475569;
         font-size: 0.8rem;
     }
-    .tab-shell {
-        background: #fbfcfe;
-        border: 1px solid var(--slate-200);
-        border-radius: 12px;
-        padding: 14px 16px;
-        margin-top: 8px;
+    .section-header-wrap {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        border-bottom: 2px solid rgba(212, 162, 76, 0.45);
+        padding-bottom: 10px;
+        margin-bottom: 12px;
     }
-    .tab-caption {
-        margin: -4px 0 12px 0;
+    .section-header-icon {
+        font-size: 1.35rem;
+        line-height: 1.2;
+        margin-top: 2px;
+    }
+    .section-header-title {
+        margin: 0;
+        color: var(--navy-900);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .section-header-desc {
+        margin: 4px 0 0 0;
         color: #475569;
-        font-size: 0.88rem;
+        font-size: 0.9rem;
+    }
+    .context-callout {
+        background: #fff8e8;
+        border-left: 4px solid var(--gold-500);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 0 0 12px 0;
+        color: #4b5563;
+        font-size: 0.86rem;
     }
     .table-context {
         margin: 2px 0 8px 0;
         color: #64748b;
         font-size: 0.82rem;
+    }
+    .playbook-card {
+        background: #ffffff;
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 14px;
+        min-height: 250px;
+        margin-bottom: 10px;
+    }
+    .playbook-critical {
+        border-left: 5px solid #c0392b;
+        background: #fff6f5;
+    }
+    .playbook-high {
+        border-left: 5px solid #d97706;
+        background: #fffbeb;
+    }
+    .playbook-priority {
+        margin: 0;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #7c2d12;
+    }
+    .playbook-signal {
+        margin: 6px 0 8px 0;
+        font-size: 1rem;
+        color: #111827;
+        font-weight: 700;
+    }
+    .playbook-line {
+        margin: 4px 0;
+        color: #374151;
+        font-size: 0.84rem;
+    }
+    .playbook-impact {
+        margin-top: 10px;
+        color: #991b1b;
+        font-size: 0.88rem;
+        font-weight: 700;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -368,6 +430,42 @@ def calculate_action_impacts(leads_view, customers_view):
     quick_win = max(impact_rows, key=lambda row: row['impact_value']) if impact_rows else None
     return impact_rows, quick_win
 
+
+def render_section_header(icon, title, description):
+    st.markdown(
+        f"""
+        <div class='section-header-wrap'>
+            <div class='section-header-icon'>{icon}</div>
+            <div>
+                <h3 class='section-header-title'>{title}</h3>
+                <p class='section-header-desc'>{description}</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def render_playbook_card(row):
+    priority = row['Priority']
+    priority_class = "playbook-critical" if priority == "Critical" else "playbook-high"
+    priority_icon = "🔴" if priority == "Critical" else "🟠"
+
+    st.markdown(
+        f"""
+        <div class='playbook-card {priority_class}'>
+            <p class='playbook-priority'>{priority_icon} {priority}</p>
+            <p class='playbook-signal'>{row['Signal']}</p>
+            <p class='playbook-line'><strong>Trigger:</strong> {row['Trigger']}</p>
+            <p class='playbook-line'><strong>Owner:</strong> {row['Recommended Owner']}</p>
+            <p class='playbook-line'><strong>SLA:</strong> {row['Suggested SLA']}</p>
+            <p class='playbook-line'><strong>Immediate Action:</strong> {row['Immediate Action']}</p>
+            <p class='playbook-impact'>Projected Impact: {row['Projected Impact']}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 # Phase 1: Executive landing layer
 st.markdown("""
 <div class='hero-wrap'>
@@ -495,7 +593,7 @@ default_channels = leads_df['channel'].value_counts().head(3).index.tolist()
 if not default_channels:
     default_channels = leads_df['channel'].unique().tolist()
 
-default_segments = customers_df['segment'].value_counts().head(2).index.tolist()
+default_segments = customers_df['segment'].value_counts().index.tolist()
 if not default_segments:
     default_segments = customers_df['segment'].unique().tolist()
 
@@ -690,115 +788,155 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🎯 Action Playbook"
 ])
 
+base_segment_order = ["Healthcare", "Finance", "Tech/SaaS", "Non-Profit", "Manufacturing"]
+present_segments = customers_df['segment'].dropna().unique().tolist()
+extra_segments = [segment for segment in sorted(present_segments) if segment not in base_segment_order]
+segment_axis = [segment for segment in base_segment_order if segment in present_segments] + extra_segments
+
 # TAB 1: FUNNEL
 with tab1:
-    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
-    st.subheader("Pipeline Risks")
-    st.markdown("<p class='tab-caption'>Identify conversion friction and unresolved opportunities that slow revenue realization.</p>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Funnel stages with what-if adjustment
-        n_leads = len(leads_view)
-        n_mql = leads_view['is_mql'].sum()
-        n_sql = leads_view['is_sql'].sum()
-        n_opp = leads_view['is_opp'].sum()
-        n_won = leads_view['is_won'].sum()
-        
-        # Apply what-if improvement
-        if pipeline_improvement > 0:
-            # Boost won deals by improving conversion
-            additional_won = int(n_opp * (pipeline_improvement / 100))
-            n_won_adjusted = min(n_won + additional_won, n_opp)
-        else:
-            n_won_adjusted = n_won
-        
-        funnel_data = {
-            'Stage': ['Leads', 'MQLs', 'SQLs', 'Opportunities', 'Closed Won'],
-            'Count': [n_leads, n_mql, n_sql, n_opp, n_won_adjusted],
-            'Conversion': [
-                '100%',
-                f"{(n_mql/n_leads*100):.1f}%" if n_leads > 0 else '0%',
-                f"{(n_sql/n_mql*100):.1f}%" if n_mql > 0 else '0%',
-                f"{(n_opp/n_sql*100):.1f}%" if n_sql > 0 else '0%',
-                f"{(n_won_adjusted/n_opp*100):.1f}%" if n_opp > 0 else '0%'
-            ]
-        }
-        
-        funnel_df = pd.DataFrame(funnel_data)
+    render_section_header(
+        "📈",
+        "Pipeline Risks",
+        "See where leads drop between stages, compare against conversion targets, and focus intervention on the biggest handoff leak."
+    )
 
-        stage_names = funnel_data['Stage']
-        stage_counts = funnel_data['Count']
-        stage_drops = []
-        for idx in range(len(stage_names) - 1):
-            from_count = stage_counts[idx]
-            to_count = stage_counts[idx + 1]
-            conversion_pct = (to_count / from_count * 100) if from_count > 0 else 0
-            drop_pct = 100 - conversion_pct
-            stage_drops.append({
-                'from_stage': stage_names[idx],
-                'to_stage': stage_names[idx + 1],
-                'from_count': from_count,
-                'to_count': to_count,
-                'conversion_pct': conversion_pct,
-                'drop_pct': drop_pct
-            })
+    n_leads = len(leads_view)
+    n_mql = int(leads_view['is_mql'].sum())
+    n_sql = int(leads_view['is_sql'].sum())
+    n_opp = int(leads_view['is_opp'].sum())
+    n_won = int(leads_view['is_won'].sum())
 
-        bottleneck = max(stage_drops, key=lambda row: row['drop_pct']) if stage_drops else None
+    if pipeline_improvement > 0:
+        additional_won = int(n_opp * (pipeline_improvement / 100))
+        n_won_adjusted = min(n_won + additional_won, n_opp)
+    else:
+        additional_won = 0
+        n_won_adjusted = n_won
 
-        funnel_colors = [PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, RISK_RED]
+    stage_names = ['Leads', 'MQLs', 'SQLs', 'Opportunities', 'Closed Won']
+    stage_counts = [n_leads, n_mql, n_sql, n_opp, n_won_adjusted]
+
+    stage_drops = []
+    for idx in range(len(stage_names) - 1):
+        from_count = stage_counts[idx]
+        to_count = stage_counts[idx + 1]
+        conversion_pct = (to_count / from_count * 100) if from_count > 0 else 0
+        drop_pct = 100 - conversion_pct
+        stage_drops.append({
+            'from_stage': stage_names[idx],
+            'to_stage': stage_names[idx + 1],
+            'conversion_pct': conversion_pct,
+            'drop_pct': drop_pct
+        })
+
+    bottleneck = max(stage_drops, key=lambda row: row['drop_pct']) if stage_drops else None
+
+    transition_labels = ['Leads→MQL', 'MQL→SQL', 'SQL→Opp', 'Opp→Won']
+    transition_rates = [
+        (n_mql / n_leads * 100) if n_leads > 0 else 0,
+        (n_sql / n_mql * 100) if n_mql > 0 else 0,
+        (n_opp / n_sql * 100) if n_sql > 0 else 0,
+        (n_won_adjusted / n_opp * 100) if n_opp > 0 else 0,
+    ]
+    transition_targets = [30, 25, 40, 35]
+    transition_colors = [
+        HEALTH_GREEN if rate >= target else RISK_RED
+        for rate, target in zip(transition_rates, transition_targets)
+    ]
+
+    col_funnel, col_rates = st.columns([1.6, 1])
+
+    with col_funnel:
+        funnel_colors = [PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN, WARNING_AMBER, PRIMARY_BLUE]
         if bottleneck:
             bottleneck_index = stage_names.index(bottleneck['to_stage'])
             if 0 <= bottleneck_index < len(funnel_colors):
                 funnel_colors[bottleneck_index] = RISK_RED
-        
-        fig = go.Figure(data=[
+
+        funnel_fig = go.Figure(data=[
             go.Funnel(
-                y=funnel_df['Stage'],
-                x=funnel_df['Count'],
+                y=stage_names,
+                x=stage_counts,
                 textposition="inside",
                 texttemplate="%{label}<br>%{value:,}",
                 hovertemplate="<b>%{label}</b><br>Count: %{value:,}<br>Of initial: %{percentInitial:.1%}<extra></extra>",
                 marker=dict(color=funnel_colors)
             )
         ])
+        apply_chart_theme(funnel_fig, "Pipeline Volume by Stage", height=420)
+        st.plotly_chart(funnel_fig, use_container_width=True)
 
-        apply_chart_theme(fig, "Pipeline Funnel (by Stage)", height=400)
-        st.plotly_chart(fig, use_container_width=True)
+    with col_rates:
+        rates_fig = go.Figure()
+        rates_fig.add_trace(go.Bar(
+            x=transition_labels,
+            y=transition_rates,
+            name="Current",
+            marker_color=transition_colors,
+            text=[f"{rate:.1f}%" for rate in transition_rates],
+            textposition="outside",
+            hovertemplate="<b>%{x}</b><br>Current: %{y:.1f}%<extra></extra>"
+        ))
+        rates_fig.add_trace(go.Scatter(
+            x=transition_labels,
+            y=transition_targets,
+            mode="lines+markers",
+            name="Target",
+            line=dict(color=WARNING_AMBER, width=2, dash="dash"),
+            marker=dict(color=WARNING_AMBER, size=7),
+            hovertemplate="<b>%{x}</b><br>Target: %{y:.1f}%<extra></extra>"
+        ))
+        apply_chart_theme(rates_fig, "Stage Conversion vs Target", "Stage Transition", "Conversion Rate (%)", 420)
+        max_rate = max(transition_targets + transition_rates) if transition_rates else max(transition_targets)
+        rates_fig.update_yaxes(range=[0, max_rate + 10], ticksuffix="%")
+        st.plotly_chart(rates_fig, use_container_width=True)
 
-        if bottleneck:
-            st.warning(
-                f"Biggest conversion drop: **{bottleneck['from_stage']} to {bottleneck['to_stage']}** "
-                f"({bottleneck['drop_pct']:.1f}% drop, {bottleneck['conversion_pct']:.1f}% conversion). "
-                "Prioritize process fixes at this handoff first."
-            )
-    
-    with col2:
+    if bottleneck:
+        st.warning(
+            f"Biggest conversion leak: **{bottleneck['from_stage']} to {bottleneck['to_stage']}** "
+            f"({bottleneck['drop_pct']:.1f}% drop, {bottleneck['conversion_pct']:.1f}% conversion). "
+            "Fix this handoff first to improve pipeline throughput fastest."
+        )
+
+    metric_col1, metric_col2, metric_col3 = st.columns(3)
+    with metric_col1:
         st.metric("Total Pipeline Value", format_currency(n_opp * 75000, decimals=1))
+    with metric_col2:
         st.metric("Expected Closed Won", format_currency(n_won_adjusted * 75000, decimals=1))
+    with metric_col3:
         if pipeline_improvement > 0:
-            st.metric("Impact of What-If", f"+{format_currency(additional_won * 75000, decimals=1)}", delta="positive")
-    
-    # Drill-down: stuck deals by channel (>30 days)
-    st.markdown("**Stuck Opportunities by Channel**")
-    st.caption("Definition: Opportunities open for more than 30 days without being closed won.")
+            st.metric("What-If Lift", f"+{format_currency(additional_won * 75000, decimals=1)}")
+        else:
+            st.metric("What-If Lift", "$0")
+
+    st.markdown("### Stuck Opportunities by Channel")
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>What this means:</strong> This view tracks open opportunities that have remained unresolved for more than 30 days since opportunity creation.
+            High counts indicate pipeline delay risk and handoff friction. Start with channels showing the oldest opportunities first.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     stuck_cutoff_date = pd.to_datetime(filter_end_date) - timedelta(days=30)
     stuck_opps = leads_view[
         (leads_view['is_opp'] == True) & 
         (leads_view['is_won'] == False) &
         (leads_view['opp_date'] <= stuck_cutoff_date)
-    ].groupby('channel').size().reset_index(name='Count')
+    ].groupby('channel').size().to_frame('Count').reset_index()
     
     if len(stuck_opps) > 0:
         fig = px.bar(
             stuck_opps,
             x='channel',
             y='Count',
-            title="Opportunities Not Closed (by Marketing Source)",
+            title="Opportunities Stalled >30 Days by Source Channel",
             color_discrete_sequence=[WARNING_AMBER]
         )
-        apply_chart_theme(fig, "Opportunities Not Closed (by Marketing Source)", "Marketing Channel", "Open Opportunities", 380)
+        apply_chart_theme(fig, "Opportunities Stalled >30 Days by Source Channel", "Marketing Channel", "Open Opportunities", 380)
         st.plotly_chart(fig, use_container_width=True)
         
         # Drill into specific channel
@@ -843,23 +981,35 @@ with tab1:
             f"**Action:** Prioritize follow-up on the oldest {top_stuck_count} opportunities in **{selected_channel_drill}** this week. "
             f"This channel represents **{selected_channel_share:.1f}%** of all currently stuck opportunities."
         )
-    st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("No opportunities are currently stalled beyond 30 days in this filter view.")
 
 # TAB 2: CHURN & HEALTH
 with tab2:
-    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
-    st.subheader("Customer Health Actions")
-    st.markdown("<p class='tab-caption'>Translate risk signals into account intervention priorities.</p>", unsafe_allow_html=True)
+    render_section_header(
+        "⚠️",
+        "Customer Health Actions",
+        "Prioritize intervention by combining churn risk score, engagement behavior, and account value signals."
+    )
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>How to read Avg Churn Risk:</strong> The y-axis shows an average <strong>risk score from 0 to 100</strong>, not a direct churn percentage.
+            Higher scores indicate stronger probability of churn behavior and require faster CS intervention.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Churn risk heatmap by segment
         risk_by_segment = customers_view.groupby('segment').agg({
             'churn_risk': 'mean',
             'customer_id': 'count'
         }).reset_index()
         risk_by_segment.columns = ['Segment', 'Avg Churn Risk', 'Customer Count']
+        risk_by_segment = risk_by_segment.set_index('Segment').reindex(segment_axis, fill_value=0).reset_index()
         
         fig = px.bar(
             risk_by_segment,
@@ -868,15 +1018,33 @@ with tab2:
             color='Avg Churn Risk',
             color_continuous_scale=[HEALTH_GREEN, WARNING_AMBER, RISK_RED],
             range_color=[0, 100],
-            title="Average Churn Risk by Segment"
+            title="Average Churn Risk Score by Segment (0-100)"
         )
-        apply_chart_theme(fig, "Average Churn Risk by Segment", "Segment", "Avg Churn Risk", 380)
+        apply_chart_theme(fig, "Average Churn Risk Score by Segment (0-100)", "Segment", "Avg Churn Risk Score (0-100)", 380)
+        fig.update_traces(
+            text=[f"n={int(count)}" for count in risk_by_segment['Customer Count']],
+            textposition="outside",
+            hovertemplate="<b>%{x}</b><br>Avg Risk Score: %{y:.1f}/100<br>%{text}<extra></extra>"
+        )
         st.plotly_chart(fig, use_container_width=True)
+
+        if len(customers_view) > 0 and len(risk_by_segment[risk_by_segment['Customer Count'] > 0]) < len(segment_axis):
+            st.info("Some segments currently have low or zero customer counts in this filter context, but remain visible for complete comparison.")
     
     with col1:
-        # Engagement vs. Churn scatter
         at_risk = customers_view[customers_view['churn_risk'] > 70]
         healthy = customers_view[customers_view['churn_risk'] <= 70]
+
+        st.markdown(
+            """
+            <div class='context-callout'>
+                <strong>Engagement Score Formula:</strong>
+                30% Feature Adoption + 40% Monthly Active Usage + 30% Support Sentiment, scaled to 0-100.
+                Scores below 30 indicate low product engagement risk.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         
         fig = go.Figure()
         
@@ -951,42 +1119,58 @@ with tab2:
                 'support_sentiment': st.column_config.TextColumn('Support Sentiment')
             }
         )
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 3: EXPANSION & COHORTS
 with tab3:
-    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
-    st.subheader("Expansion Levers")
-    st.markdown("<p class='tab-caption'>Pinpoint segment-level expansion momentum and cohort retention quality.</p>", unsafe_allow_html=True)
+    render_section_header(
+        "💰",
+        "Expansion Levers",
+        "Track which segments drive expansion ARR now and use cohort retention to judge long-term customer quality."
+    )
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Why this matters:</strong> Expansion ARR shows immediate upside from existing customers.
+            Cohort retention shows whether newly acquired groups are staying longer over time, which is a leading indicator of durable growth.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Expansion by segment
         expansion_by_segment = customers_view[customers_view['is_churned'] == 0].groupby('segment').agg({
             'arr': 'sum',
             'expansion_arr': 'sum'
         }).reset_index()
+        expansion_by_segment = expansion_by_segment.set_index('segment').reindex(segment_axis, fill_value=0).reset_index()
         expansion_by_segment['expansion_rate'] = np.where(
             expansion_by_segment['arr'] > 0,
             (expansion_by_segment['expansion_arr'] / expansion_by_segment['arr'] * 100).round(1),
             0
         )
         expansion_by_segment.columns = ['Segment', 'Base ARR', 'Expansion ARR', 'Expansion Rate (%)']
+        expansion_chart_df = expansion_by_segment.copy()
+        expansion_chart_df['Base ARR ($M)'] = (expansion_chart_df['Base ARR'] / 1_000_000).round(2)
+        expansion_chart_df['Expansion ARR ($M)'] = (expansion_chart_df['Expansion ARR'] / 1_000_000).round(2)
         
         fig = px.bar(
-            expansion_by_segment,
+            expansion_chart_df,
             x='Segment',
-            y=['Base ARR', 'Expansion ARR'],
+            y=['Base ARR ($M)', 'Expansion ARR ($M)'],
             barmode='stack',
-            title="Base vs. Expansion ARR by Segment",
+            title="Base vs Expansion ARR by Segment (in Millions)",
             color_discrete_sequence=[PRIMARY_BLUE, HEALTH_GREEN]
         )
-        apply_chart_theme(fig, "Base vs. Expansion ARR by Segment", "Segment", "ARR", 380)
+        apply_chart_theme(fig, "Base vs Expansion ARR by Segment (in Millions)", "Segment", "ARR ($M)", 380)
+        fig.update_traces(
+            hovertemplate="<b>%{x}</b><br>%{fullData.name}: %{y:.2f}M<extra></extra>"
+        )
+        fig.update_yaxes(tickformat=".2f", ticksuffix="M")
         st.plotly_chart(fig, use_container_width=True)
     
     with col1:
-        # Cohort retention curve
         cohort_analysis = customers_view.groupby('cohort').agg({
             'customer_id': 'count',
             'is_churned': 'sum',
@@ -1007,19 +1191,31 @@ with tab3:
         fig.update_traces(line=dict(color=SECONDARY_BLUE, width=3), marker=dict(color=PRIMARY_BLUE, size=8))
         apply_chart_theme(fig, "Cohort Retention Rate Over Time", "Cohort", "Retention (%)", 350)
         st.plotly_chart(fig, use_container_width=True)
+
+        if len(cohort_analysis) > 1:
+            oldest_retention = cohort_analysis.iloc[0]['Retention (%)']
+            latest_retention = cohort_analysis.iloc[-1]['Retention (%)']
+            trend_text = "improving" if latest_retention >= oldest_retention else "declining"
+            st.markdown(
+                f"**Cohort insight:** Retention is currently **{trend_text}** "
+                f"(earliest cohort: {oldest_retention:.1f}%, latest cohort: {latest_retention:.1f}%)."
+            )
+        else:
+            st.info("Not enough cohort points in this filter context to infer a retention trend yet.")
     
     with col2:
         total_expansion = expansion_by_segment['Expansion ARR'].sum()
         st.metric("Total Expansion ARR", format_currency(total_expansion, decimals=2))
         avg_expansion_rate = expansion_by_segment['Expansion Rate (%)'].mean()
         st.metric("Avg Expansion Rate", f"{avg_expansion_rate:.1f}%")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 4: FORECAST
 with tab4:
-    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
-    st.subheader("Scenario Forecast")
-    st.markdown("<p class='tab-caption'>Stress-test ARR outcomes under current churn, expansion, and conversion assumptions.</p>", unsafe_allow_html=True)
+    render_section_header(
+        "🔮",
+        "Scenario Forecast",
+        "Model ARR outcomes under current churn and expansion assumptions, then stress-test the impact of pipeline conversion improvement."
+    )
     
     col1, col2 = st.columns([2, 1])
     
@@ -1082,13 +1278,14 @@ with tab4:
     - Current Expansion Rate: {expansion_rate*100:.1f}%
     - What-If Conversion Improvement: {pipeline_improvement}%
     """)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 5: PLAYBOOK
 with tab5:
-    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
-    st.subheader("Action Playbook")
-    st.markdown("<p class='tab-caption'>Operational recommendations generated from current risk, pipeline, and expansion signals.</p>", unsafe_allow_html=True)
+    render_section_header(
+        "🎯",
+        "Action Playbook",
+        "Convert signals into owner-level execution with urgency, SLA, and projected ARR impact in one operating view."
+    )
 
     sql_to_won_now = (leads_view['is_won'].sum() / leads_view['is_sql'].sum() * 100) if leads_view['is_sql'].sum() > 0 else 0
     at_risk_count = len(customers_view[customers_view['churn_risk'] > 70])
@@ -1103,6 +1300,7 @@ with tab5:
             'Trigger': f'At-risk share {at_risk_pct:.1f}% (threshold > 20%)',
             'Recommended Owner': 'Customer Success Manager',
             'Suggested SLA': 'Start outreach within 48 hours',
+            'Immediate Action': impact_rows[0]['quick_win'],
             'Projected Impact': impact_rows[0]['impact_label']
         },
         {
@@ -1111,6 +1309,7 @@ with tab5:
             'Trigger': f'SQL->Won conversion {sql_to_won_now:.1f}% (target >= 25%)',
             'Recommended Owner': 'RevOps + Sales Leadership',
             'Suggested SLA': 'Run stage audit this week',
+            'Immediate Action': impact_rows[1]['quick_win'],
             'Projected Impact': impact_rows[1]['impact_label']
         },
         {
@@ -1119,6 +1318,7 @@ with tab5:
             'Trigger': f'Expansion rate {expansion_pct:.1f}% (target >= 12%)',
             'Recommended Owner': 'CS Leadership + Account Strategy',
             'Suggested SLA': 'Prioritize top 20 expansion candidates in 7 days',
+            'Immediate Action': impact_rows[2]['quick_win'],
             'Projected Impact': impact_rows[2]['impact_label']
         }
     ]
@@ -1127,29 +1327,21 @@ with tab5:
     playbook_order = {'Critical': 0, 'High': 1, 'Monitor': 2}
     playbook_df['priority_rank'] = playbook_df['Priority'].map(playbook_order)
     playbook_df = playbook_df.sort_values(['priority_rank', 'Signal']).drop(columns=['priority_rank'])
+
     st.markdown(
-        f"<p class='table-context'>Showing {len(playbook_df)} prioritized actions for the current filter context.</p>",
+        f"<p class='table-context'>Showing {len(playbook_df)} prioritized actions for the current filter context, ordered by urgency.</p>",
         unsafe_allow_html=True
     )
-    st.dataframe(
-        playbook_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            'Priority': st.column_config.TextColumn('Priority'),
-            'Signal': st.column_config.TextColumn('Signal'),
-            'Trigger': st.column_config.TextColumn('Trigger Condition'),
-            'Recommended Owner': st.column_config.TextColumn('Recommended Owner'),
-            'Suggested SLA': st.column_config.TextColumn('Suggested SLA'),
-            'Projected Impact': st.column_config.TextColumn('Projected Impact')
-        }
-    )
+
+    playbook_cols = st.columns(len(playbook_df)) if len(playbook_df) > 0 else []
+    for idx, row in enumerate(playbook_df.to_dict(orient='records')):
+        with playbook_cols[idx]:
+            render_playbook_card(row)
 
     st.markdown("**Execution Notes:**")
     st.markdown("- Review this playbook after every filter or scenario change.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
     st.markdown("- Projected impacts are directional estimates based on the current filtered operating context.")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.divider()

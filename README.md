@@ -56,21 +56,23 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 ## Features
 
 **📈 Sales Funnel Analysis**
-- Visualize conversion rates at each stage (Leads → MQLs → SQLs → Opportunities → Won)
+- Two-panel pipeline diagnostics: stage volume funnel + stage conversion vs target chart
 - Auto-identify the largest stage-to-stage conversion drop for immediate intervention
-- Identify stuck deals by marketing channel
-- Drill down into specific channels to see individual opportunities
+- Track stuck opportunities by channel (defined as open opportunities older than 30 days)
+- Drill into oldest opportunities to prioritize channel-level follow-up
 
 **⚠️ Customer Health & Churn Risk**
-- Heat map of churn risk across customer segments
+- Segment chart uses average churn risk score on a 0-100 scale (higher score = higher churn likelihood)
+- Always-visible segment comparison (including low-volume segments) for complete context
 - Engagement vs. churn scatter plot to identify at-risk customers
+- Engagement score formula shown in-app: 30% feature adoption + 40% monthly usage + 30% support sentiment
 - Actionable list of customers requiring intervention
 - Signals: engagement score, feature adoption, support sentiment
 
 **💰 Expansion & Cohort Analysis**
-- Base vs. expansion ARR breakdown by segment
-- Cohort retention curves over time
-- Track which cohorts are expanding fastest
+- Base vs. expansion ARR breakdown by segment with ARR displayed in millions (max 2 decimals)
+- Cohort retention curve with business interpretation (what it means and why it matters)
+- Track which cohorts are expanding fastest and whether retention trend is improving or declining
 
 **🔮 ARR Forecast**
 - 12-month forward projection based on churn and expansion trends
@@ -84,6 +86,10 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 **⚡ Quick Win + Projected Action Impact**
 - Surface the highest immediate upside lever based on the active filtered context
 - Translate each playbook action into directional ARR impact estimates for faster prioritization
+
+**🧭 Action Playbook Cards**
+- Executive-style priority cards (Critical/High) with owner, SLA, trigger, and immediate action
+- Projected ARR impact highlighted in each card for faster execution prioritization
 
 ## Key Metrics at a Glance
 
@@ -104,11 +110,11 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 - **What-If Slider**: Test impact of improving SQL→Won conversion rate
 
 ### Drilling Into the Data
-1. **Pipeline Risks**: Identify conversion bottlenecks and unresolved opportunities
+1. **Pipeline Risks**: Identify conversion bottlenecks, compare conversion rates against target, and isolate stuck opportunities older than 30 days
 2. **Customer Health Actions**: Prioritize high-risk accounts and intervention signals
-3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum
+3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum with interpretation context
 4. **Scenario Forecast**: Model ARR outcomes under different assumptions
-5. **Action Playbook**: Map observed signals to owner-level actions and SLA guidance
+5. **Action Playbook**: Use priority cards to map observed signals to owner-level actions, SLA, and projected impact
 6. **Quick Win signal**: Use the highlighted top opportunity to decide what should be executed first this cycle
 
 ## Data Simulation

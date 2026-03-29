@@ -317,6 +317,57 @@ def render_benchmark_card(title, benchmark_range, current_value_text, signal_lab
         unsafe_allow_html=True
     )
 
+
+def calculate_action_impacts(leads_view, customers_view):
+    """Estimate retention, pipeline, and expansion upside from current filtered context."""
+    active_customers = customers_view[customers_view['is_churned'] == 0]
+    at_risk_customers = customers_view[customers_view['churn_risk'] > 70]
+
+    at_risk_arr = at_risk_customers['arr'].sum()
+    retention_value = at_risk_arr * 0.50  # Assume 50% recovery on high-risk ARR with intervention.
+
+    sql_count = int(leads_view['is_sql'].sum())
+    won_count = int(leads_view['is_won'].sum())
+    target_won_count = int(np.ceil(sql_count * 0.25))
+    additional_wins_needed = max(target_won_count - won_count, 0)
+    pipeline_value = additional_wins_needed * 75_000
+
+    active_arr = active_customers['arr'].sum()
+    current_expansion = active_customers['expansion_arr'].sum()
+    target_expansion = active_arr * 0.12
+    expansion_value = max(target_expansion - current_expansion, 0)
+
+    current_nrr = (active_customers['nrr_contribution'].mean() * 100) if len(active_customers) > 0 else 0
+    expansion_nrr_lift = (expansion_value / active_arr * 100) if active_arr > 0 else 0
+    projected_nrr = current_nrr + expansion_nrr_lift
+
+    impact_rows = [
+        {
+            'signal': 'High churn exposure',
+            'impact_value': retention_value,
+            'impact_label': f"Protect up to {format_currency(retention_value, decimals=2)} ARR if 50% of at-risk accounts are retained.",
+            'quick_win': 'Launch 48-hour rescue plan for highest-risk accounts.'
+        },
+        {
+            'signal': 'Pipeline conversion pressure',
+            'impact_value': pipeline_value,
+            'impact_label': f"Add up to {format_currency(pipeline_value, decimals=2)} ARR by lifting SQL to Won to 25%.",
+            'quick_win': 'Run stage handoff audit and recover stalled SQL follow-through this week.'
+        },
+        {
+            'signal': 'Expansion underperformance',
+            'impact_value': expansion_value,
+            'impact_label': (
+                f"Capture up to {format_currency(expansion_value, decimals=2)} ARR by moving expansion to 12% "
+                f"(projected NRR {projected_nrr:.1f}%)."
+            ),
+            'quick_win': 'Prioritize top expansion-ready accounts and launch tailored upsell plays.'
+        }
+    ]
+
+    quick_win = max(impact_rows, key=lambda row: row['impact_value']) if impact_rows else None
+    return impact_rows, quick_win
+
 # Phase 1: Executive landing layer
 st.markdown("""
 <div class='hero-wrap'>
@@ -434,12 +485,42 @@ st.divider()
 
 # SIDEBAR FILTERS
 st.sidebar.title("⚙️ Filters & What-If")
+st.sidebar.caption("Set your operating context first, then use tabs to investigate root causes and actions.")
+
+data_start = min(leads_df['lead_date'].min(), customers_df['start_date'].min())
+data_end = max(leads_df['lead_date'].max(), customers_df['start_date'].max())
+default_date_range = (pd.to_datetime(data_start), pd.to_datetime(data_end))
+
+default_channels = leads_df['channel'].value_counts().head(3).index.tolist()
+if not default_channels:
+    default_channels = leads_df['channel'].unique().tolist()
+
+default_segments = customers_df['segment'].value_counts().head(2).index.tolist()
+if not default_segments:
+    default_segments = customers_df['segment'].unique().tolist()
+
+if st.sidebar.button("Reset to recommended defaults", help="Reset date, filters, what-if, and view mode to the recommended starting context."):
+    st.session_state['date_range'] = default_date_range
+    st.session_state['selected_channels'] = default_channels
+    st.session_state['selected_segments'] = default_segments
+    st.session_state['pipeline_improvement'] = 0
+    st.session_state['view_mode'] = "All Accounts"
+    st.rerun()
+
+view_mode = st.sidebar.radio(
+    "Executive View Mode",
+    options=["All Accounts", "At-Risk Focus", "Expansion Focus"],
+    index=0,
+    key="view_mode",
+    help="Choose a leadership lens before drilling down: broad health, retention pressure, or expansion upside."
+)
 
 # Date range filter
 date_range = st.sidebar.date_input(
     "Date Range",
-    value=(pd.to_datetime('2024-01-01'), pd.to_datetime('2026-03-27')),
-    key="date_range"
+    value=default_date_range,
+    key="date_range",
+    help="Limit analysis to a specific time window; wider ranges improve trend reliability."
 )
 
 if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -453,28 +534,26 @@ else:
 selected_channels = st.sidebar.multiselect(
     "Marketing Channels",
     options=leads_df['channel'].unique(),
-    default=leads_df['channel'].unique()
+    default=default_channels,
+    key="selected_channels",
+    help="Start with top-volume channels, then isolate one source to inspect conversion bottlenecks."
 )
 
 # Segment filter
 selected_segments = st.sidebar.multiselect(
     "Customer Segments",
     options=customers_df['segment'].unique(),
-    default=customers_df['segment'].unique()
+    default=default_segments,
+    key="selected_segments",
+    help="Focus on one or two segments to compare retention and expansion dynamics clearly."
 )
 
 # What-if slider: improve conversion
 pipeline_improvement = st.sidebar.slider(
     "What-if: Improve SQL→Won Conversion by",
     min_value=0, max_value=50, value=0, step=5,
-    help="Adjust to see impact on pipeline"
-)
-
-view_mode = st.sidebar.radio(
-    "Executive View Mode",
-    options=["All Accounts", "At-Risk Focus", "Expansion Focus"],
-    index=0,
-    help="Switch context for customer-centric analysis without changing core filters."
+    key="pipeline_improvement",
+    help="Test upside scenarios and compare expected ARR movement before committing execution resources."
 )
 
 # Filter data
@@ -580,8 +659,21 @@ with bench4:
     expansion_signal, expansion_class, expansion_note = get_benchmark_signal("expansion", expansion_ref)
     render_benchmark_card("Expansion Rate", "10-20%", f"{expansion_ref:.1f}%", expansion_signal, expansion_class, expansion_note)
 
+impact_rows, quick_win = calculate_action_impacts(leads_view, customers_view)
+if quick_win and quick_win['impact_value'] > 0:
+    st.success(
+        f"Quick Win: **{quick_win['signal']}** can unlock up to **{format_currency(quick_win['impact_value'], decimals=2)}** ARR. "
+        f"Recommended immediate move: {quick_win['quick_win']}"
+    )
+else:
+    st.info("Quick Win: No high-confidence upside identified in the current filter context. Broaden scope or adjust view mode.")
+
 st.sidebar.divider()
-st.sidebar.markdown("**View detailed breakdowns in tabs below.**")
+st.sidebar.markdown("**How to use this view**")
+st.sidebar.markdown("1. Pick an executive mode")
+st.sidebar.markdown("2. Refine date, channels, and segments")
+st.sidebar.markdown("3. Use Benchmark Lens and Quick Win to set priorities")
+st.sidebar.markdown("4. Open tabs for root cause and owner-level actions")
 with st.sidebar.popover("📘 KPI Glossary"):
     st.markdown("**MQL**: Marketing Qualified Lead")
     st.markdown("**SQL**: Sales Qualified Lead")
@@ -1011,7 +1103,7 @@ with tab5:
             'Trigger': f'At-risk share {at_risk_pct:.1f}% (threshold > 20%)',
             'Recommended Owner': 'Customer Success Manager',
             'Suggested SLA': 'Start outreach within 48 hours',
-            'Expected Impact': 'Reduce avoidable churn in current quarter'
+            'Projected Impact': impact_rows[0]['impact_label']
         },
         {
             'Priority': 'Critical' if sql_to_won_now < 20 else 'High',
@@ -1019,7 +1111,7 @@ with tab5:
             'Trigger': f'SQL->Won conversion {sql_to_won_now:.1f}% (target >= 25%)',
             'Recommended Owner': 'RevOps + Sales Leadership',
             'Suggested SLA': 'Run stage audit this week',
-            'Expected Impact': 'Lift win rates and improve forecast reliability'
+            'Projected Impact': impact_rows[1]['impact_label']
         },
         {
             'Priority': 'Critical' if expansion_pct < 10 else 'High',
@@ -1027,7 +1119,7 @@ with tab5:
             'Trigger': f'Expansion rate {expansion_pct:.1f}% (target >= 12%)',
             'Recommended Owner': 'CS Leadership + Account Strategy',
             'Suggested SLA': 'Prioritize top 20 expansion candidates in 7 days',
-            'Expected Impact': 'Increase NRR and net ARR growth'
+            'Projected Impact': impact_rows[2]['impact_label']
         }
     ]
 
@@ -1049,13 +1141,14 @@ with tab5:
             'Trigger': st.column_config.TextColumn('Trigger Condition'),
             'Recommended Owner': st.column_config.TextColumn('Recommended Owner'),
             'Suggested SLA': st.column_config.TextColumn('Suggested SLA'),
-            'Expected Impact': st.column_config.TextColumn('Expected Impact')
+            'Projected Impact': st.column_config.TextColumn('Projected Impact')
         }
     )
 
     st.markdown("**Execution Notes:**")
     st.markdown("- Review this playbook after every filter or scenario change.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
+    st.markdown("- Projected impacts are directional estimates based on the current filtered operating context.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer

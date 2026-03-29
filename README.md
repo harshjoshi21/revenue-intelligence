@@ -81,6 +81,10 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 - Compare Churn, NRR, SQL→Won, and Expansion against target benchmark ranges
 - Use status signals (Healthy, Watch, Action) to quickly decide where intervention is needed
 
+**⚡ Quick Win + Projected Action Impact**
+- Surface the highest immediate upside lever based on the active filtered context
+- Translate each playbook action into directional ARR impact estimates for faster prioritization
+
 ## Key Metrics at a Glance
 
 - **Active Customers**: Number of current customers (not churned)
@@ -91,6 +95,8 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 ## How to Use
 
 ### Filters & What-If Analysis (Left Sidebar)
+- **Reset to recommended defaults**: Return to the suggested executive starting context in one click
+- **Guided usage flow**: Executive mode first, then filters, then benchmark/quick-win review
 - **Date Range**: Focus on a specific time period
 - **Marketing Channels**: Filter by organic search, paid ads, referrals, etc.
 - **Customer Segments**: Drill into healthcare, finance, tech, non-profit, manufacturing
@@ -103,6 +109,7 @@ The app uses realistic simulated SaaS data to demonstrate analytical approach, d
 3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum
 4. **Scenario Forecast**: Model ARR outcomes under different assumptions
 5. **Action Playbook**: Map observed signals to owner-level actions and SLA guidance
+6. **Quick Win signal**: Use the highlighted top opportunity to decide what should be executed first this cycle
 
 ## Data Simulation
 

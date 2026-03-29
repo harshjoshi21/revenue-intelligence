@@ -16,6 +16,14 @@ Current status:
 - `dev` is now the active post-v2 development line
 - Release tag **v2.0.0** is published on `main`
 
+## Post-v2 Roadmap (v2.1 Candidates)
+
+- Add benchmark trend view to show directional movement (improving, flat, deteriorating) across churn, conversion, and expansion.
+- Add deeper playbook explainability so each recommended action shows key drivers and confidence signals.
+- Add segment-over-segment delta view to make leadership comparison faster across channels and customer cohorts.
+- Add scenario presets (conservative, baseline, aggressive) to speed planning discussions.
+- Add exportable executive summary snapshots for leadership review and stakeholder circulation.
+
 ## Portfolio Context (For Senior Leaders)
 
 This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.

@@ -198,6 +198,23 @@ st.markdown("""
         color: #475569;
         font-size: 0.8rem;
     }
+    .tab-shell {
+        background: #fbfcfe;
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 8px;
+    }
+    .tab-caption {
+        margin: -4px 0 12px 0;
+        color: #475569;
+        font-size: 0.88rem;
+    }
+    .table-context {
+        margin: 2px 0 8px 0;
+        color: #64748b;
+        font-size: 0.82rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -583,8 +600,9 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 # TAB 1: FUNNEL
 with tab1:
+    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
     st.subheader("Pipeline Risks")
-    st.caption("Identify conversion friction and unresolved opportunities that slow revenue realization.")
+    st.markdown("<p class='tab-caption'>Identify conversion friction and unresolved opportunities that slow revenue realization.</p>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
@@ -703,9 +721,27 @@ with tab1:
         channel_stuck['days_stuck'] = (
             pd.to_datetime(filter_end_date).normalize() - pd.to_datetime(channel_stuck['opp_date']).dt.normalize()
         ).dt.days
+        channel_stuck['priority'] = np.where(channel_stuck['days_stuck'] >= 60, "Critical", "High")
+        channel_stuck['opp_date'] = pd.to_datetime(channel_stuck['opp_date']).dt.date
         channel_stuck = channel_stuck.sort_values('days_stuck', ascending=False)
 
-        st.dataframe(channel_stuck.head(10), use_container_width=True)
+        channel_stuck_display = channel_stuck[['segment', 'channel', 'opp_date', 'days_stuck', 'priority']].head(10)
+        st.markdown(
+            f"<p class='table-context'>Showing {len(channel_stuck_display)} of {len(channel_stuck)} stuck opportunities in {selected_channel_drill}, sorted by urgency.</p>",
+            unsafe_allow_html=True
+        )
+        st.dataframe(
+            channel_stuck_display,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                'segment': st.column_config.TextColumn('Segment'),
+                'channel': st.column_config.TextColumn('Channel'),
+                'opp_date': st.column_config.DateColumn('Opportunity Date'),
+                'days_stuck': st.column_config.NumberColumn('Days Stuck', format='%d'),
+                'priority': st.column_config.TextColumn('Priority')
+            }
+        )
 
         top_stuck_count = int(channel_stuck.head(5).shape[0])
         selected_channel_count = int(stuck_opps[stuck_opps['channel'] == selected_channel_drill]['Count'].iloc[0])
@@ -715,11 +751,13 @@ with tab1:
             f"**Action:** Prioritize follow-up on the oldest {top_stuck_count} opportunities in **{selected_channel_drill}** this week. "
             f"This channel represents **{selected_channel_share:.1f}%** of all currently stuck opportunities."
         )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 2: CHURN & HEALTH
 with tab2:
+    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
     st.subheader("Customer Health Actions")
-    st.caption("Translate risk signals into account intervention priorities.")
+    st.markdown("<p class='tab-caption'>Translate risk signals into account intervention priorities.</p>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
@@ -788,14 +826,46 @@ with tab2:
     ]
     
     if len(at_risk_detail) > 0:
-        at_risk_display = at_risk_detail.head(15).copy()
+        at_risk_display = at_risk_detail.copy()
+        at_risk_display['priority'] = np.select(
+            [at_risk_display['churn_risk'] >= 85, at_risk_display['churn_risk'] >= 70],
+            ['Critical', 'High'],
+            default='Monitor'
+        )
+        at_risk_display['engagement_flag'] = np.where(at_risk_display['engagement_score'] < 30, 'Low engagement', 'Needs follow-up')
+        priority_rank = {'Critical': 0, 'High': 1, 'Monitor': 2}
+        at_risk_display['priority_rank'] = at_risk_display['priority'].map(priority_rank)
+        at_risk_display = at_risk_display.sort_values(['priority_rank', 'churn_risk'], ascending=[True, False]).drop(columns=['priority_rank'])
         at_risk_display['arr'] = at_risk_display['arr'].map(lambda value: format_currency(value, decimals=1))
-        st.dataframe(at_risk_display, use_container_width=True)
+        at_risk_display = at_risk_display[[
+            'segment', 'arr', 'churn_risk', 'engagement_score', 'engagement_flag', 'priority', 'support_sentiment'
+        ]]
+        at_risk_table = at_risk_display.head(15)
+        st.markdown(
+            f"<p class='table-context'>Showing {len(at_risk_table)} of {len(at_risk_display)} at-risk accounts, sorted by intervention urgency.</p>",
+            unsafe_allow_html=True
+        )
+        st.dataframe(
+            at_risk_table,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                'segment': st.column_config.TextColumn('Segment'),
+                'arr': st.column_config.TextColumn('ARR'),
+                'churn_risk': st.column_config.NumberColumn('Churn Risk', format='%.1f'),
+                'engagement_score': st.column_config.NumberColumn('Engagement', format='%.0f'),
+                'engagement_flag': st.column_config.TextColumn('Engagement Signal'),
+                'priority': st.column_config.TextColumn('Priority'),
+                'support_sentiment': st.column_config.TextColumn('Support Sentiment')
+            }
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 3: EXPANSION & COHORTS
 with tab3:
+    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
     st.subheader("Expansion Levers")
-    st.caption("Pinpoint segment-level expansion momentum and cohort retention quality.")
+    st.markdown("<p class='tab-caption'>Pinpoint segment-level expansion momentum and cohort retention quality.</p>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
@@ -851,11 +921,13 @@ with tab3:
         st.metric("Total Expansion ARR", format_currency(total_expansion, decimals=2))
         avg_expansion_rate = expansion_by_segment['Expansion Rate (%)'].mean()
         st.metric("Avg Expansion Rate", f"{avg_expansion_rate:.1f}%")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 4: FORECAST
 with tab4:
+    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
     st.subheader("Scenario Forecast")
-    st.caption("Stress-test ARR outcomes under current churn, expansion, and conversion assumptions.")
+    st.markdown("<p class='tab-caption'>Stress-test ARR outcomes under current churn, expansion, and conversion assumptions.</p>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
@@ -918,11 +990,13 @@ with tab4:
     - Current Expansion Rate: {expansion_rate*100:.1f}%
     - What-If Conversion Improvement: {pipeline_improvement}%
     """)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # TAB 5: PLAYBOOK
 with tab5:
+    st.markdown("<div class='tab-shell'>", unsafe_allow_html=True)
     st.subheader("Action Playbook")
-    st.caption("Operational recommendations generated from current risk, pipeline, and expansion signals.")
+    st.markdown("<p class='tab-caption'>Operational recommendations generated from current risk, pipeline, and expansion signals.</p>", unsafe_allow_html=True)
 
     sql_to_won_now = (leads_view['is_won'].sum() / leads_view['is_sql'].sum() * 100) if leads_view['is_sql'].sum() > 0 else 0
     at_risk_count = len(customers_view[customers_view['churn_risk'] > 70])
@@ -932,6 +1006,7 @@ with tab5:
 
     playbook_rows = [
         {
+            'Priority': 'Critical' if at_risk_pct > 20 else 'High',
             'Signal': 'High churn exposure',
             'Trigger': f'At-risk share {at_risk_pct:.1f}% (threshold > 20%)',
             'Recommended Owner': 'Customer Success Manager',
@@ -939,6 +1014,7 @@ with tab5:
             'Expected Impact': 'Reduce avoidable churn in current quarter'
         },
         {
+            'Priority': 'Critical' if sql_to_won_now < 20 else 'High',
             'Signal': 'Pipeline conversion pressure',
             'Trigger': f'SQL->Won conversion {sql_to_won_now:.1f}% (target >= 25%)',
             'Recommended Owner': 'RevOps + Sales Leadership',
@@ -946,6 +1022,7 @@ with tab5:
             'Expected Impact': 'Lift win rates and improve forecast reliability'
         },
         {
+            'Priority': 'Critical' if expansion_pct < 10 else 'High',
             'Signal': 'Expansion underperformance',
             'Trigger': f'Expansion rate {expansion_pct:.1f}% (target >= 12%)',
             'Recommended Owner': 'CS Leadership + Account Strategy',
@@ -955,11 +1032,31 @@ with tab5:
     ]
 
     playbook_df = pd.DataFrame(playbook_rows)
-    st.dataframe(playbook_df, use_container_width=True)
+    playbook_order = {'Critical': 0, 'High': 1, 'Monitor': 2}
+    playbook_df['priority_rank'] = playbook_df['Priority'].map(playbook_order)
+    playbook_df = playbook_df.sort_values(['priority_rank', 'Signal']).drop(columns=['priority_rank'])
+    st.markdown(
+        f"<p class='table-context'>Showing {len(playbook_df)} prioritized actions for the current filter context.</p>",
+        unsafe_allow_html=True
+    )
+    st.dataframe(
+        playbook_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            'Priority': st.column_config.TextColumn('Priority'),
+            'Signal': st.column_config.TextColumn('Signal'),
+            'Trigger': st.column_config.TextColumn('Trigger Condition'),
+            'Recommended Owner': st.column_config.TextColumn('Recommended Owner'),
+            'Suggested SLA': st.column_config.TextColumn('Suggested SLA'),
+            'Expected Impact': st.column_config.TextColumn('Expected Impact')
+        }
+    )
 
     st.markdown("**Execution Notes:**")
     st.markdown("- Review this playbook after every filter or scenario change.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.divider()

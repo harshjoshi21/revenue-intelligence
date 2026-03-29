@@ -8,7 +8,7 @@ random.seed(42)
 
 def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_leads=1000):
     """
-    Generate realistic SaaS funnel data with seasonality, channel attribution, 
+    Generate realistic SaaS funnel data with channel attribution,
     and customer lifecycle signals for RevOps/Growth Analytics.
     """
     
@@ -49,7 +49,7 @@ def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_l
         'Opportunity to Won': 0.35
     }
     
-    # Generate leads by month with seasonality
+    # Generate leads distributed across the date range
     date_range = pd.date_range(start, end, freq='D')
     n_days = len(date_range)
     n_leads = int(n_days / 30 * monthly_leads)
@@ -89,11 +89,16 @@ def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_l
     leads_df['is_won'] = leads_df['is_opp'] & (np.random.binomial(1, conversion_rates['Opportunity to Won'], len(leads_df)) == 1)
     leads_df['won_date'] = leads_df.apply(
         lambda x: x['opp_date'] + timedelta(days=np.random.randint(
-            sales_cycle[x['segment']][0], 
+            sales_cycle[x['segment']][0],
             sales_cycle[x['segment']][1]
         )) if x['is_won'] else pd.NaT,
         axis=1
     )
+
+    # Exclude modeled closes after the dataset window to avoid future-dated customer starts.
+    future_wins_mask = leads_df['is_won'] & (leads_df['won_date'] > end)
+    leads_df.loc[future_wins_mask, 'is_won'] = False
+    leads_df.loc[future_wins_mask, 'won_date'] = pd.NaT
     
     # ARR for won deals
     leads_df['arr'] = leads_df.apply(
@@ -134,7 +139,7 @@ def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_l
     ).clip(0, 100)
     
     # Actual churn (small % of customers)
-    churn_probability = 0.08  # 8% monthly churn rate typical for this segment
+    churn_probability = 0.08  # Cohort-level churn incidence probability in the simulated window
     customers_df['is_churned'] = np.random.binomial(1, churn_probability, len(customers_df))
     customers_df['churn_date'] = customers_df.apply(
         lambda x: x['start_date'] + timedelta(days=np.random.randint(60, max(61, int(x['tenure_months'] * 30)))) 

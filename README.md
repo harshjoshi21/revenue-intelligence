@@ -2,7 +2,7 @@
 
 Predictive Analytics for Retention, Expansion, and Revenue Decisions
 
-## V2 Progress Snapshot (In Development on `dev`)
+## V2 Progress Snapshot (Released)
 
 Completed so far:
 - **Phase 1**: Executive landing experience (hero framing, first-glance clarity cards, dynamic insight row)
@@ -12,9 +12,9 @@ Completed so far:
 - **Phase 5 (prep)**: Dev-side readiness gate (technical smoke checks and [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md))
 
 Current status:
-- `main` remains stable at **v1.0.0**
-- `dev` is the active **v2** development line
-- Formal release to `main` will happen only after final v2 validation
+- `main` is stable at **v2.0.0**
+- `dev` is now the active post-v2 development line
+- Release tag **v2.0.0** is published on `main`
 
 ## Portfolio Context (For Senior Leaders)
 

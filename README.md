@@ -20,13 +20,14 @@ Current status:
 
 This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.
 
-## Decisions Enabled
+## Why This Matters: Three Operating Decisions You Can Make Right Now
 
 This project is designed to demonstrate practical decision support, not just reporting. It helps answer:
 - Which accounts should Customer Success prioritize this week to reduce churn exposure?
 - Where is the pipeline conversion process breaking, and which stage needs intervention?
 - Which customer segments/cohorts offer the strongest expansion and NRR opportunity?
-- How does ARR trajectory shift under different conversion and operating assumptions?
+
+It also provides scenario visibility for how ARR trajectory can shift under different conversion and operating assumptions.
 
 On first glance, the landing screen now answers:
 - **What this project is**: A unified revenue intelligence workspace for CS and RevOps decisions

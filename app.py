@@ -186,6 +186,21 @@ def apply_chart_theme(fig, title, xaxis_title=None, yaxis_title=None, height=400
     if yaxis_title is not None:
         fig.update_yaxes(title=yaxis_title, gridcolor="#e5e7eb")
 
+
+def format_currency(value, decimals=1):
+    """Format currency consistently as $, k, or M across the dashboard."""
+    if pd.isna(value):
+        return "$0"
+
+    amount = float(value)
+    absolute = abs(amount)
+
+    if absolute >= 1_000_000:
+        return f"${amount / 1_000_000:.{decimals}f}M"
+    if absolute >= 1_000:
+        return f"${amount / 1_000:.{decimals}f}k"
+    return f"${amount:,.0f}"
+
 # Phase 1: Executive landing layer
 st.markdown("""
 <div class='hero-wrap'>
@@ -254,7 +269,7 @@ with st.expander("🧭 Evaluator Walkthrough (2 minutes)", expanded=False):
     st.markdown("**4) Validate actionability (40 sec)**")
     st.markdown("Open Action Playbook to map data signals to owner, SLA, and expected business impact.")
 
-st.markdown("### Decisions This Dashboard Enables")
+st.markdown("### Why This Matters: Three Operating Decisions You Can Make Right Now")
 d1, d2, d3 = st.columns(3)
 with d1:
     st.markdown("""
@@ -288,7 +303,7 @@ with col1:
 
 with col2:
     total_arr = customers_df[customers_df['is_churned'] == 0]['arr'].sum()
-    st.metric("Current ARR", f"${total_arr/1e6:.1f}M", delta=None)
+    st.metric("Current ARR", format_currency(total_arr, decimals=1), delta=None)
 
 with col3:
     churn_customers = customers_df['is_churned'].sum()
@@ -370,6 +385,8 @@ leads_view = leads_filtered.copy()
 
 # Phase 1: dynamic executive insight strip
 st.markdown("### Top Insights for Current Selection")
+
+sql_to_won = 0.0
 
 if len(leads_view) > 0 and len(customers_view) > 0:
     n_sql_filtered = leads_view['is_sql'].sum()
@@ -503,16 +520,19 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.metric("Total Pipeline Value", f"${(n_opp * 75000):.0f}")
-        st.metric("Expected Closed Won", f"${(n_won_adjusted * 75000):.0f}")
+        st.metric("Total Pipeline Value", format_currency(n_opp * 75000, decimals=1))
+        st.metric("Expected Closed Won", format_currency(n_won_adjusted * 75000, decimals=1))
         if pipeline_improvement > 0:
-            st.metric("Impact of What-If", f"+${(additional_won * 75000):.0f}", delta="positive")
+            st.metric("Impact of What-If", f"+{format_currency(additional_won * 75000, decimals=1)}", delta="positive")
     
-    # Drill-down: stuck deals by channel
+    # Drill-down: stuck deals by channel (>30 days)
     st.markdown("**Stuck Opportunities by Channel**")
+    st.caption("Definition: Opportunities open for more than 30 days without being closed won.")
+    stuck_cutoff_date = pd.to_datetime(filter_end_date) - timedelta(days=30)
     stuck_opps = leads_view[
         (leads_view['is_opp'] == True) & 
-        (leads_view['is_won'] == False)
+        (leads_view['is_won'] == False) &
+        (leads_view['opp_date'] <= stuck_cutoff_date)
     ].groupby('channel').size().reset_index(name='Count')
     
     if len(stuck_opps) > 0:
@@ -531,10 +551,25 @@ with tab1:
         channel_stuck = leads_view[
             (leads_view['channel'] == selected_channel_drill) &
             (leads_view['is_opp'] == True) &
-            (leads_view['is_won'] == False)
-        ][['lead_id', 'segment', 'opp_date', 'channel']].sort_values('opp_date', ascending=False)
-        
+            (leads_view['is_won'] == False) &
+            (leads_view['opp_date'] <= stuck_cutoff_date)
+        ][['lead_id', 'segment', 'opp_date', 'channel']].copy()
+
+        channel_stuck['days_stuck'] = (
+            pd.to_datetime(filter_end_date).normalize() - pd.to_datetime(channel_stuck['opp_date']).dt.normalize()
+        ).dt.days
+        channel_stuck = channel_stuck.sort_values('days_stuck', ascending=False)
+
         st.dataframe(channel_stuck.head(10), use_container_width=True)
+
+        top_stuck_count = int(channel_stuck.head(5).shape[0])
+        selected_channel_count = int(stuck_opps[stuck_opps['channel'] == selected_channel_drill]['Count'].iloc[0])
+        total_stuck_count = int(stuck_opps['Count'].sum())
+        selected_channel_share = (selected_channel_count / total_stuck_count * 100) if total_stuck_count > 0 else 0
+        st.markdown(
+            f"**Action:** Prioritize follow-up on the oldest {top_stuck_count} opportunities in **{selected_channel_drill}** this week. "
+            f"This channel represents **{selected_channel_share:.1f}%** of all currently stuck opportunities."
+        )
 
 # TAB 2: CHURN & HEALTH
 with tab2:
@@ -608,7 +643,9 @@ with tab2:
     ]
     
     if len(at_risk_detail) > 0:
-        st.dataframe(at_risk_detail.head(15), use_container_width=True)
+        at_risk_display = at_risk_detail.head(15).copy()
+        at_risk_display['arr'] = at_risk_display['arr'].map(lambda value: format_currency(value, decimals=1))
+        st.dataframe(at_risk_display, use_container_width=True)
 
 # TAB 3: EXPANSION & COHORTS
 with tab3:
@@ -666,7 +703,7 @@ with tab3:
     
     with col2:
         total_expansion = expansion_by_segment['Expansion ARR'].sum()
-        st.metric("Total Expansion ARR", f"${total_expansion/1e6:.2f}M")
+        st.metric("Total Expansion ARR", format_currency(total_expansion, decimals=2))
         avg_expansion_rate = expansion_by_segment['Expansion Rate (%)'].mean()
         st.metric("Avg Expansion Rate", f"{avg_expansion_rate:.1f}%")
 
@@ -713,13 +750,22 @@ with tab4:
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        current_arr_m = current_arr / 1e6
-        month_6_arr = forecast_df_custom[forecast_df_custom['Month'] == 6]['Projected ARR'].values[0]
-        month_12_arr = forecast_df_custom[forecast_df_custom['Month'] == 12]['Projected ARR'].values[0]
-        
-        st.metric("Current ARR", f"${current_arr_m:.2f}M")
-        st.metric("6-Month Projected ARR", f"${month_6_arr:.2f}M", delta=f"${month_6_arr - current_arr_m:.2f}M")
-        st.metric("12-Month Projected ARR", f"${month_12_arr:.2f}M", delta=f"${month_12_arr - current_arr_m:.2f}M")
+        month_6_arr_m = forecast_df_custom[forecast_df_custom['Month'] == 6]['Projected ARR'].values[0]
+        month_12_arr_m = forecast_df_custom[forecast_df_custom['Month'] == 12]['Projected ARR'].values[0]
+        month_6_arr_value = month_6_arr_m * 1_000_000
+        month_12_arr_value = month_12_arr_m * 1_000_000
+
+        st.metric("Current ARR", format_currency(current_arr, decimals=2))
+        st.metric(
+            "6-Month Projected ARR",
+            format_currency(month_6_arr_value, decimals=2),
+            delta=format_currency(month_6_arr_value - current_arr, decimals=2)
+        )
+        st.metric(
+            "12-Month Projected ARR",
+            format_currency(month_12_arr_value, decimals=2),
+            delta=format_currency(month_12_arr_value - current_arr, decimals=2)
+        )
     
     st.markdown("**Key Assumptions:**")
     st.markdown(f"""

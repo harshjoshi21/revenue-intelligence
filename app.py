@@ -453,6 +453,118 @@ def format_currency(value, decimals=1):
     return f"${amount:,.0f}"
 
 
+def get_open_pipeline_slice(leads_frame, as_of_date=None):
+    """Return opportunities still open as of the selected analysis date."""
+    opp_scope = leads_frame[(leads_frame['is_opp'] == True)].copy()
+
+    if as_of_date is not None:
+        as_of = pd.to_datetime(as_of_date).normalize()
+        opp_scope = opp_scope[pd.to_datetime(opp_scope['opp_date']).dt.normalize() <= as_of]
+
+        if 'opp_close_date' in opp_scope.columns:
+            close_dates = pd.to_datetime(opp_scope['opp_close_date'])
+            return opp_scope[
+                close_dates.isna() |
+                (close_dates.dt.normalize() > as_of)
+            ]
+
+    if 'opp_status' in opp_scope.columns:
+        return opp_scope[opp_scope['opp_status'] == 'Open']
+
+    return opp_scope[opp_scope['is_won'] == False]
+
+
+def count_closed_lost(leads_frame, as_of_date=None):
+    """Return closed-lost count with compatibility for older datasets."""
+    closed_scope = get_closed_pipeline_slice(leads_frame, as_of_date=as_of_date)
+    if 'is_lost' in closed_scope.columns:
+        return int(closed_scope['is_lost'].sum())
+
+    if 'opp_status' in closed_scope.columns:
+        return int((closed_scope['opp_status'] == 'Closed Lost').sum())
+
+    return 0
+
+
+def classify_stuck_priority(days_stuck_series):
+    """Map open-opportunity aging to execution priority bands."""
+    return np.select(
+        [
+            days_stuck_series >= 90,
+            days_stuck_series >= 60
+        ],
+        [
+            "Critical",
+            "High"
+        ],
+        default="Watch"
+    )
+
+
+def get_closed_pipeline_slice(leads_frame, as_of_date=None):
+    """Return opportunities with close outcomes recorded by the selected analysis date."""
+    opp_scope = leads_frame[(leads_frame['is_opp'] == True)].copy()
+
+    if as_of_date is not None:
+        as_of = pd.to_datetime(as_of_date).normalize()
+        opp_scope = opp_scope[pd.to_datetime(opp_scope['opp_date']).dt.normalize() <= as_of]
+
+        if 'opp_close_date' in opp_scope.columns:
+            close_dates = pd.to_datetime(opp_scope['opp_close_date'])
+            return opp_scope[
+                close_dates.notna() &
+                (close_dates.dt.normalize() <= as_of)
+            ]
+
+    if 'opp_status' in opp_scope.columns:
+        return opp_scope[opp_scope['opp_status'].isin(['Closed Won', 'Closed Lost'])]
+
+    if 'is_closed' in opp_scope.columns:
+        return opp_scope[opp_scope['is_closed'] == True]
+
+    return opp_scope[opp_scope['is_won'] == True]
+
+
+def get_priority_rank(priority):
+    """Convert a named priority to a sortable rank."""
+    return {'Monitor': 0, 'High': 1, 'Critical': 2}.get(priority, 0)
+
+
+def get_max_priority(*priorities):
+    """Return the strictest priority across multiple signals."""
+    if not priorities:
+        return 'Monitor'
+    return max(priorities, key=get_priority_rank)
+
+
+def get_pipeline_conversion_priority(metrics):
+    """Evaluate conversion urgency independent of pipeline hygiene."""
+    if not metrics.get('has_pipeline_data', False):
+        return 'Monitor'
+    if metrics['sql_to_won'] < 20:
+        return 'Critical'
+    if metrics['sql_to_won'] < 25:
+        return 'High'
+    return 'Monitor'
+
+
+def get_pipeline_hygiene_priority(metrics):
+    """Evaluate backlog-aging urgency independent of conversion quality."""
+    if metrics.get('open_opp_count', 0) == 0:
+        return 'Monitor'
+
+    stale_90_count = metrics.get('open_opp_stale_90_count', 0)
+    stale_90_pct = metrics.get('open_opp_stale_90_pct', 0)
+    stale_60_count = metrics.get('open_opp_stale_60_count', 0)
+    stale_60_pct = metrics.get('open_opp_stale_60_pct', 0)
+
+    if stale_90_count >= 10 or stale_90_pct >= 20:
+        return 'Critical'
+    if stale_60_count >= 8 or stale_60_pct >= 35:
+        return 'High'
+    return 'Monitor'
+
+
 def get_benchmark_signal(metric_name, value):
     """Return benchmark signal label, style class, and interpretation text."""
     metric = metric_name.lower()
@@ -503,7 +615,7 @@ def render_benchmark_card(title, benchmark_range, current_value_text, signal_lab
     )
 
 
-def derive_operating_metrics(leads_view, customers_view):
+def derive_operating_metrics(leads_view, customers_view, as_of_date=None):
     """Derive one canonical KPI payload for benchmark lens, quick win, and playbook."""
     active_customers = customers_view[customers_view['is_churned'] == 0]
     at_risk_customers = customers_view[customers_view['churn_risk'] > 70]
@@ -527,10 +639,45 @@ def derive_operating_metrics(leads_view, customers_view):
     avg_won_arr = leads_view[leads_view['is_won'] == 1]['arr'].mean() if won_count > 0 else np.nan
     avg_won_arr = float(avg_won_arr) if not pd.isna(avg_won_arr) and avg_won_arr > 0 else 75_000
 
+    if as_of_date is not None:
+        analysis_end_date = pd.to_datetime(as_of_date).normalize()
+    elif len(leads_view) > 0 and leads_view['lead_date'].notna().any():
+        analysis_end_date = pd.to_datetime(leads_view['lead_date'].max()).normalize()
+    else:
+        analysis_end_date = pd.Timestamp.now().normalize()
+
+    total_opportunities = int(leads_view['is_opp'].sum())
+    open_opportunities = get_open_pipeline_slice(leads_view, as_of_date=analysis_end_date).copy()
+    open_opp_count = len(open_opportunities)
+    closed_scope = get_closed_pipeline_slice(leads_view, as_of_date=analysis_end_date)
+    closed_lost_count = count_closed_lost(leads_view, as_of_date=analysis_end_date)
+
+    if open_opp_count > 0:
+        open_opp_age_days = (
+            analysis_end_date - pd.to_datetime(open_opportunities['opp_date']).dt.normalize()
+        ).dt.days
+        open_opp_age_days = open_opp_age_days.fillna(0).clip(lower=0)
+        open_opp_stale_30_count = int((open_opp_age_days >= 30).sum())
+        open_opp_stale_60_count = int((open_opp_age_days >= 60).sum())
+        open_opp_stale_90_count = int((open_opp_age_days >= 90).sum())
+        median_open_opp_age_days = int(open_opp_age_days.median())
+    else:
+        open_opp_stale_30_count = 0
+        open_opp_stale_60_count = 0
+        open_opp_stale_90_count = 0
+        median_open_opp_age_days = 0
+
+    open_opp_stale_30_pct = (open_opp_stale_30_count / open_opp_count * 100) if open_opp_count > 0 else 0
+    open_opp_stale_60_pct = (open_opp_stale_60_count / open_opp_count * 100) if open_opp_count > 0 else 0
+    open_opp_stale_90_pct = (open_opp_stale_90_count / open_opp_count * 100) if open_opp_count > 0 else 0
+
+    closed_opp_count = len(closed_scope)
+    closed_lost_rate = (closed_lost_count / closed_opp_count * 100) if closed_opp_count > 0 else 0
+
     expansion_ready_arr = active_customers[active_customers['churn_risk'] <= 70]['arr'].sum()
 
     has_customer_data = total_customers > 0
-    has_pipeline_data = sql_count > 0
+    has_pipeline_data = sql_count > 0 or total_opportunities > 0
     has_expansion_data = active_arr > 0 and total_arr > 0
 
     return {
@@ -548,6 +695,17 @@ def derive_operating_metrics(leads_view, customers_view):
         'current_expansion': current_expansion,
         'expansion_pct': expansion_pct,
         'avg_won_arr': avg_won_arr,
+        'total_opportunities': total_opportunities,
+        'open_opp_count': open_opp_count,
+        'closed_lost_count': closed_lost_count,
+        'closed_lost_rate': closed_lost_rate,
+        'open_opp_stale_30_count': open_opp_stale_30_count,
+        'open_opp_stale_60_count': open_opp_stale_60_count,
+        'open_opp_stale_90_count': open_opp_stale_90_count,
+        'open_opp_stale_30_pct': open_opp_stale_30_pct,
+        'open_opp_stale_60_pct': open_opp_stale_60_pct,
+        'open_opp_stale_90_pct': open_opp_stale_90_pct,
+        'median_open_opp_age_days': median_open_opp_age_days,
         'expansion_ready_arr': expansion_ready_arr,
         'has_customer_data': has_customer_data,
         'has_pipeline_data': has_pipeline_data,
@@ -582,11 +740,10 @@ def get_action_priority(action_key, metrics):
     if action_key == 'pipeline':
         if not metrics.get('has_pipeline_data', False):
             return 'Monitor'
-        if metrics['sql_to_won'] < 20:
-            return 'Critical'
-        if metrics['sql_to_won'] < 25:
-            return 'High'
-        return 'Monitor'
+
+        conversion_priority = get_pipeline_conversion_priority(metrics)
+        hygiene_priority = get_pipeline_hygiene_priority(metrics)
+        return get_max_priority(conversion_priority, hygiene_priority)
 
     if action_key == 'expansion':
         if not metrics.get('has_expansion_data', False):
@@ -607,6 +764,8 @@ def calculate_action_impacts(leads_view, customers_view, metrics=None):
 
     churn_priority = get_action_priority('churn', metrics)
     pipeline_priority = get_action_priority('pipeline', metrics)
+    pipeline_conversion_priority = get_pipeline_conversion_priority(metrics)
+    pipeline_hygiene_priority = get_pipeline_hygiene_priority(metrics)
     expansion_priority = get_action_priority('expansion', metrics)
 
     if churn_priority == 'Monitor':
@@ -645,14 +804,22 @@ def calculate_action_impacts(leads_view, customers_view, metrics=None):
             )
             pipeline_quick_win = "Maintain stage handoff discipline and review conversion quality in weekly ops cadence."
     else:
-        target_won_count = int(np.ceil(metrics['sql_count'] * 0.25))
-        additional_wins_needed = max(target_won_count - metrics['won_count'], 0)
-        pipeline_value = additional_wins_needed * metrics['avg_won_arr']
-        pipeline_label = (
-            f"Add up to {format_currency(pipeline_value, decimals=2)} ARR by lifting SQL to Won to 25% "
-            f"(using current average won ARR of {format_currency(metrics['avg_won_arr'], decimals=1)})."
-        )
-        pipeline_quick_win = "Run a 72-hour stage handoff audit and recover stalled SQL follow-through this week."
+        if pipeline_conversion_priority != 'Monitor':
+            target_won_count = int(np.ceil(metrics['sql_count'] * 0.25))
+            additional_wins_needed = max(target_won_count - metrics['won_count'], 0)
+            pipeline_value = additional_wins_needed * metrics['avg_won_arr']
+            pipeline_label = (
+                f"Add up to {format_currency(pipeline_value, decimals=2)} ARR by lifting SQL to Won to 25% "
+                f"(using current average won ARR of {format_currency(metrics['avg_won_arr'], decimals=1)})."
+            )
+            pipeline_quick_win = "Run a 72-hour stage handoff audit and recover stalled SQL follow-through this week."
+        else:
+            pipeline_value = 0
+            pipeline_label = (
+                f"Conversion is stable, but {metrics['open_opp_stale_60_count']} of {metrics['open_opp_count']} open opportunities "
+                f"({metrics['open_opp_stale_60_pct']:.1f}%) are stale >=60 days. Clear backlog to reduce pipeline drag."
+            )
+            pipeline_quick_win = "Run a hygiene sprint to close or requalify oldest open opportunities by owner this week."
 
     target_expansion = metrics['active_arr'] * 0.12
     if expansion_priority == 'Monitor':
@@ -763,27 +930,56 @@ def build_playbook_rows(metrics, impact_by_key):
         churn_sla = 'Review risk cohort weekly'
 
     pipeline_priority = get_action_priority('pipeline', metrics)
+    pipeline_conversion_priority = get_pipeline_conversion_priority(metrics)
+    pipeline_hygiene_priority = get_pipeline_hygiene_priority(metrics)
+
     if not metrics.get('has_pipeline_data', False):
         pipeline_signal = 'Pipeline signal unavailable'
-        pipeline_trigger = 'No SQLs in the current filter context.'
+        pipeline_trigger = 'No SQLs or opportunities in the current filter context.'
         pipeline_sla = 'Broaden filters before assigning pipeline intervention'
-    elif pipeline_priority == 'Critical':
+    elif pipeline_conversion_priority == 'Critical':
         pipeline_signal = 'Pipeline conversion intervention required'
         pipeline_trigger = (
             f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is below 20% intervention floor "
             f"and materially off the 25% aspiration."
         )
-        pipeline_sla = 'Run stage audit in 72 hours'
-    elif pipeline_priority == 'High':
+        if pipeline_hygiene_priority != 'Monitor':
+            pipeline_trigger += (
+                f" Hygiene pressure is also elevated: {metrics['open_opp_stale_60_count']} of {metrics['open_opp_count']} "
+                f"open opportunities are stale >=60 days ({metrics['open_opp_stale_60_pct']:.1f}%)."
+            )
+        pipeline_sla = 'Run stage audit in 72 hours and lock owner cleanup list'
+    elif pipeline_conversion_priority == 'High':
         pipeline_signal = 'Pipeline conversion below target'
         pipeline_trigger = (
             f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is in the 20-25% watch band and below 25% aspiration."
         )
+        if pipeline_hygiene_priority != 'Monitor':
+            pipeline_trigger += (
+                f" Hygiene pressure is elevated: {metrics['open_opp_stale_60_count']} of {metrics['open_opp_count']} "
+                f"open opportunities are stale >=60 days ({metrics['open_opp_stale_60_pct']:.1f}%)."
+            )
         pipeline_sla = 'Complete stage audit and recovery plan within 5 business days'
+    elif pipeline_hygiene_priority == 'Critical':
+        pipeline_signal = 'Pipeline hygiene backlog at intervention level'
+        pipeline_trigger = (
+            f"SQL->Won conversion is {metrics['sql_to_won']:.1f}% (control band), but open backlog quality is critical: "
+            f"{metrics['open_opp_stale_90_count']} of {metrics['open_opp_count']} open opportunities are >=90 days "
+            f"({metrics['open_opp_stale_90_pct']:.1f}%)."
+        )
+        pipeline_sla = 'Run hygiene war-room in 72 hours and force close/requalify stale deals'
+    elif pipeline_hygiene_priority == 'High':
+        pipeline_signal = 'Pipeline hygiene backlog requires cleanup'
+        pipeline_trigger = (
+            f"SQL->Won conversion is {metrics['sql_to_won']:.1f}% (control band), but {metrics['open_opp_stale_60_count']} "
+            f"of {metrics['open_opp_count']} open opportunities are stale >=60 days ({metrics['open_opp_stale_60_pct']:.1f}%)."
+        )
+        pipeline_sla = 'Complete open-deal hygiene sprint within 5 business days'
     else:
         pipeline_signal = 'Pipeline conversion on target'
         pipeline_trigger = (
-            f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is at or above 25% aspirational target."
+            f"SQL->Won conversion {metrics['sql_to_won']:.1f}% is at or above 25% aspirational target, and open backlog aging is controlled "
+            f"(>=60 days: {metrics['open_opp_stale_60_pct']:.1f}%)."
         )
         pipeline_sla = 'Maintain weekly stage hygiene and monthly calibration'
 
@@ -1157,7 +1353,7 @@ else:
 st.markdown("### Benchmark Lens")
 st.caption("Compare current performance against operating benchmarks to decide whether to hold, monitor, or intervene.")
 
-operating_metrics = derive_operating_metrics(leads_view, customers_view)
+operating_metrics = derive_operating_metrics(leads_view, customers_view, as_of_date=filter_end_date)
 churn_rate_view = operating_metrics['churn_rate']
 nrr_view = operating_metrics['current_nrr']
 
@@ -1224,6 +1420,15 @@ with tab1:
         """
         <div class='context-callout'>
             <strong>Section focus:</strong> See where leads drop between stages, compare against conversion targets, and focus intervention on the biggest handoff leak.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Denominator contract:</strong> SQL->Won uses closed-won opportunities divided by SQL volume in the filtered cohort.
+            Stuck-opportunity counts use only opportunities still open as of the selected end date.
         </div>
         """,
         unsafe_allow_html=True
@@ -1299,7 +1504,7 @@ with tab1:
         )
     ])
     apply_chart_theme(funnel_fig, "Pipeline Volume by Stage", height=480)
-    st.plotly_chart(funnel_fig, use_container_width=True)
+    st.plotly_chart(funnel_fig, width='stretch')
 
     stage_col1, stage_col2, stage_col3, stage_col4, stage_col5 = st.columns(5)
     with stage_col1:
@@ -1335,7 +1540,7 @@ with tab1:
     apply_chart_theme(rates_fig, "Stage Conversion vs Target", "Stage Transition", "Conversion Rate (%)", 380)
     max_rate = max(transition_targets + transition_rates) if transition_rates else max(transition_targets)
     rates_fig.update_yaxes(range=[0, max_rate + 10], ticksuffix="%")
-    st.plotly_chart(rates_fig, use_container_width=True)
+    st.plotly_chart(rates_fig, width='stretch')
 
     if bottleneck:
         st.warning(
@@ -1372,44 +1577,67 @@ with tab1:
     st.markdown(
         """
         <div class='context-callout'>
-            <strong>What this means:</strong> This view tracks open opportunities that have remained unresolved for more than 30 days since opportunity creation.
-            High counts indicate pipeline delay risk and handoff friction. Start with channels showing the oldest opportunities first.
+            <strong>What this means:</strong> This view tracks currently open opportunities with no close outcome as of the selected end date.
+            Deals older than 30 days indicate execution friction; aging beyond 60-90 days signals escalating intervention urgency.
         </div>
         """,
         unsafe_allow_html=True
     )
 
+    total_opportunities = operating_metrics['total_opportunities']
+    open_opportunities = get_open_pipeline_slice(leads_view, as_of_date=filter_end_date).copy()
+    open_opportunity_count = operating_metrics['open_opp_count']
+    closed_lost_count = operating_metrics['closed_lost_count']
+    stale_60_count = operating_metrics['open_opp_stale_60_count']
+    median_open_age = operating_metrics['median_open_opp_age_days']
+
+    lifecycle_col1, lifecycle_col2, lifecycle_col3, lifecycle_col4 = st.columns(4)
+    with lifecycle_col1:
+        st.metric("Total Opportunities", f"{total_opportunities:,}")
+    with lifecycle_col2:
+        st.metric("Currently Open", f"{open_opportunity_count:,}")
+    with lifecycle_col3:
+        st.metric("Closed Lost", f"{closed_lost_count:,}")
+    with lifecycle_col4:
+        st.metric("Open >=60 Days", f"{stale_60_count:,}", delta=f"Median age {median_open_age} days")
+
     stuck_cutoff_date = pd.to_datetime(filter_end_date) - timedelta(days=30)
-    stuck_opps = leads_view[
-        (leads_view['is_opp'] == True) & 
-        (leads_view['is_won'] == False) &
-        (leads_view['opp_date'] <= stuck_cutoff_date)
-    ].groupby('channel').size().to_frame('Count').reset_index()
+    stuck_scope = open_opportunities[
+        (open_opportunities['opp_date'].notna()) &
+        (open_opportunities['opp_date'] <= stuck_cutoff_date)
+    ]
+    stuck_opps = stuck_scope.groupby('channel').size().to_frame('Count').reset_index()
     
     if len(stuck_opps) > 0:
         fig = px.bar(
             stuck_opps,
             x='channel',
             y='Count',
-            title="Opportunities Stalled >30 Days by Source Channel",
+            title="Open Opportunities Stalled >30 Days by Source Channel",
             color_discrete_sequence=[WARNING_AMBER]
         )
-        apply_chart_theme(fig, "Opportunities Stalled >30 Days by Source Channel", "Marketing Channel", "Open Opportunities", 380)
-        st.plotly_chart(fig, use_container_width=True)
+        apply_chart_theme(fig, "Open Opportunities Stalled >30 Days by Source Channel", "Marketing Channel", "Open Opportunities", 380)
+        st.plotly_chart(fig, width='stretch')
         
-        # Drill into specific channel
-        selected_channel_drill = st.selectbox("Drill into channel:", stuck_opps['channel'].unique())
-        channel_stuck = leads_view[
-            (leads_view['channel'] == selected_channel_drill) &
-            (leads_view['is_opp'] == True) &
-            (leads_view['is_won'] == False) &
-            (leads_view['opp_date'] <= stuck_cutoff_date)
+        # Keep drill selection stable across reruns even when available channels change.
+        drill_channel_options = sorted(stuck_opps['channel'].dropna().unique().tolist())
+        if not drill_channel_options:
+            drill_channel_options = ['Unknown Channel']
+        if 'selected_channel_drill' in st.session_state and st.session_state['selected_channel_drill'] not in drill_channel_options:
+            st.session_state['selected_channel_drill'] = drill_channel_options[0]
+        selected_channel_drill = st.selectbox(
+            "Drill into channel:",
+            drill_channel_options,
+            key='selected_channel_drill'
+        )
+        channel_stuck = stuck_scope[
+            (stuck_scope['channel'] == selected_channel_drill)
         ][['lead_id', 'segment', 'opp_date', 'channel']].copy()
 
         channel_stuck['days_stuck'] = (
             pd.to_datetime(filter_end_date).normalize() - pd.to_datetime(channel_stuck['opp_date']).dt.normalize()
         ).dt.days
-        channel_stuck['priority'] = np.where(channel_stuck['days_stuck'] >= 60, "Critical", "High")
+        channel_stuck['priority'] = classify_stuck_priority(channel_stuck['days_stuck'])
         channel_stuck['opp_date'] = pd.to_datetime(channel_stuck['opp_date']).dt.date
         channel_stuck = channel_stuck.sort_values('days_stuck', ascending=False)
 
@@ -1420,7 +1648,7 @@ with tab1:
         )
         st.dataframe(
             channel_stuck_display,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             column_config={
                 'segment': st.column_config.TextColumn('Segment'),
@@ -1435,12 +1663,349 @@ with tab1:
         selected_channel_count = int(stuck_opps[stuck_opps['channel'] == selected_channel_drill]['Count'].iloc[0])
         total_stuck_count = int(stuck_opps['Count'].sum())
         selected_channel_share = (selected_channel_count / total_stuck_count * 100) if total_stuck_count > 0 else 0
+        top_critical_count = int((channel_stuck.head(5)['priority'] == 'Critical').sum())
+        urgency_suffix = (
+            f" Top 5 includes {top_critical_count} Critical cases (>=90 days open)."
+            if top_critical_count > 0
+            else ""
+        )
         st.markdown(
             f"**Action:** Prioritize follow-up on the oldest {top_stuck_count} opportunities in **{selected_channel_drill}** this week. "
-            f"This channel represents **{selected_channel_share:.1f}%** of all currently stuck opportunities."
+            f"This channel represents **{selected_channel_share:.1f}%** of all currently stuck open opportunities.{urgency_suffix}"
         )
     else:
-        st.info("No opportunities are currently stalled beyond 30 days in this filter view.")
+        st.info("No open opportunities are currently stalled beyond 30 days in this filter view.")
+
+    st.markdown("### Pipeline Hygiene by Owner")
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>What this means:</strong> This owner table isolates backlog hygiene load so leaders can assign cleanup execution directly.
+            Prioritize owners with the largest >=90 day open counts first.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if len(open_opportunities) > 0:
+        owner_scope = open_opportunities.copy()
+        if 'opportunity_owner' not in owner_scope.columns:
+            owner_scope['opportunity_owner'] = 'Unassigned'
+        owner_scope['opportunity_owner'] = owner_scope['opportunity_owner'].fillna('Unassigned')
+        owner_scope['days_open'] = (
+            pd.to_datetime(filter_end_date).normalize() - pd.to_datetime(owner_scope['opp_date']).dt.normalize()
+        ).dt.days.clip(lower=0)
+
+        owner_table = owner_scope.groupby('opportunity_owner').agg(
+            open_opps=('lead_id', 'count'),
+            stale_60=('days_open', lambda values: int((values >= 60).sum())),
+            stale_90=('days_open', lambda values: int((values >= 90).sum())),
+            median_days_open=('days_open', lambda values: int(np.median(values))),
+            max_days_open=('days_open', 'max')
+        ).reset_index()
+
+        owner_table['stale_60_pct'] = np.where(
+            owner_table['open_opps'] > 0,
+            owner_table['stale_60'] / owner_table['open_opps'] * 100,
+            0
+        )
+        owner_table['hygiene_priority'] = np.select(
+            [
+                (owner_table['stale_90'] >= 3) | (owner_table['stale_60_pct'] >= 50),
+                (owner_table['stale_60'] >= 2) | (owner_table['stale_60_pct'] >= 30)
+            ],
+            ['Critical', 'High'],
+            default='Watch'
+        )
+        owner_table['sla_breach'] = np.select(
+            [
+                (owner_table['stale_90'] >= 2) | (owner_table['max_days_open'] >= 120),
+                (owner_table['stale_60'] >= 2) | (owner_table['median_days_open'] >= 60)
+            ],
+            ['Critical Breach', 'Watch Breach'],
+            default='On Track'
+        )
+        owner_table['weekly_cleanup_quota'] = np.select(
+            [
+                owner_table['hygiene_priority'] == 'Critical',
+                owner_table['hygiene_priority'] == 'High'
+            ],
+            [
+                np.ceil(owner_table['stale_90'] * 0.8 + owner_table['stale_60'] * 0.4),
+                np.ceil(owner_table['stale_60'] * 0.5)
+            ],
+            default=np.where(owner_table['open_opps'] > 0, 1, 0)
+        )
+        owner_table['weekly_cleanup_quota'] = owner_table['weekly_cleanup_quota'].astype(int).clip(lower=0)
+        owner_rank = {'Critical': 0, 'High': 1, 'Watch': 2}
+        owner_table['priority_rank'] = owner_table['hygiene_priority'].map(owner_rank)
+        owner_table = owner_table.sort_values(
+            ['priority_rank', 'weekly_cleanup_quota', 'stale_90', 'stale_60', 'max_days_open'],
+            ascending=[True, False, False, False, False]
+        )
+
+        total_quota = int(owner_table['weekly_cleanup_quota'].sum())
+        critical_breach_owners = int((owner_table['sla_breach'] == 'Critical Breach').sum())
+        if critical_breach_owners > 0:
+            st.warning(
+                f"Owner SLA signal: {critical_breach_owners} owner(s) are in Critical Breach. "
+                f"Set a minimum weekly cleanup target of {total_quota} opportunities this cycle."
+            )
+        else:
+            st.info(
+                f"Owner SLA signal: no Critical Breach owners. Recommended weekly cleanup target is {total_quota} opportunities."
+            )
+
+        owner_display = owner_table[[
+            'opportunity_owner',
+            'open_opps',
+            'stale_60',
+            'stale_90',
+            'stale_60_pct',
+            'median_days_open',
+            'max_days_open',
+            'sla_breach',
+            'weekly_cleanup_quota',
+            'hygiene_priority'
+        ]].copy()
+
+        def highlight_owner_rows(row):
+            if row['sla_breach'] == 'Critical Breach':
+                return ['background-color: #fee2e2; color: #7f1d1d; font-weight: 600;'] * len(row)
+            if row['sla_breach'] == 'Watch Breach':
+                return ['background-color: #ffedd5; color: #7c2d12;'] * len(row)
+            if row['hygiene_priority'] == 'Critical':
+                return ['background-color: #fff7ed; color: #7c2d12;'] * len(row)
+            return [''] * len(row)
+
+        st.dataframe(
+            owner_display.style.apply(highlight_owner_rows, axis=1),
+            width='stretch',
+            hide_index=True,
+            column_config={
+                'opportunity_owner': st.column_config.TextColumn('Owner'),
+                'open_opps': st.column_config.NumberColumn('Open Opps', format='%d'),
+                'stale_60': st.column_config.NumberColumn('Open >=60d', format='%d'),
+                'stale_90': st.column_config.NumberColumn('Open >=90d', format='%d'),
+                'stale_60_pct': st.column_config.NumberColumn('>=60d Share', format='%.1f%%'),
+                'median_days_open': st.column_config.NumberColumn('Median Days Open', format='%d'),
+                'max_days_open': st.column_config.NumberColumn('Oldest Open (days)', format='%d'),
+                'sla_breach': st.column_config.TextColumn('SLA Status'),
+                'weekly_cleanup_quota': st.column_config.NumberColumn('Weekly Cleanup Quota', format='%d'),
+                'hygiene_priority': st.column_config.TextColumn('Priority')
+            }
+        )
+
+        cleanup_plan = owner_table[[
+            'opportunity_owner',
+            'sla_breach',
+            'hygiene_priority',
+            'weekly_cleanup_quota',
+            'stale_60',
+            'stale_90',
+            'median_days_open',
+            'max_days_open'
+        ]].copy()
+        cleanup_plan['recommended_focus'] = np.select(
+            [
+                cleanup_plan['sla_breach'] == 'Critical Breach',
+                cleanup_plan['hygiene_priority'] == 'Critical',
+                cleanup_plan['hygiene_priority'] == 'High'
+            ],
+            [
+                'Escalate immediately; close or requalify oldest deals first.',
+                'Run focused cleanup sprint on >=90 day backlog.',
+                'Prioritize >=60 day cleanup and next-step enforcement.'
+            ],
+            default='Maintain weekly hygiene cadence and monitor drift.'
+        )
+
+        packet_id = f"PIPE-{pd.to_datetime(filter_end_date).strftime('%Y%m%d')}-{view_mode.replace(' ', '').upper()}"
+        packet_generated_at = datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z')
+        cleanup_plan.insert(0, 'packet_id', packet_id)
+        cleanup_plan.insert(1, 'generated_at', packet_generated_at)
+        cleanup_plan.insert(2, 'view_mode', view_mode)
+        cleanup_plan.insert(3, 'filter_start_date', pd.to_datetime(filter_start_date).strftime('%Y-%m-%d'))
+        cleanup_plan.insert(4, 'filter_end_date', pd.to_datetime(filter_end_date).strftime('%Y-%m-%d'))
+        cleanup_plan.insert(5, 'selected_channels', '|'.join(map(str, selected_channels)) if selected_channels else 'All')
+        cleanup_plan.insert(6, 'selected_segments', '|'.join(map(str, selected_segments)) if selected_segments else 'All')
+        cleanup_plan['week_reference'] = pd.to_datetime(filter_end_date).strftime('%Y-%m-%d')
+        breach_mask = cleanup_plan['sla_breach'].isin(['Critical Breach', 'Watch Breach'])
+        breached_plan = cleanup_plan[breach_mask].copy()
+        critical_breach_mask = cleanup_plan['sla_breach'] == 'Critical Breach'
+        critical_breach_plan = cleanup_plan[critical_breach_mask].copy()
+
+        breached_owner_count = len(breached_plan)
+        breached_quota_total = int(breached_plan['weekly_cleanup_quota'].sum()) if breached_owner_count > 0 else 0
+        critical_breach_count = len(critical_breach_plan)
+        critical_breach_quota_total = int(critical_breach_plan['weekly_cleanup_quota'].sum()) if critical_breach_count > 0 else 0
+        if breached_owner_count > 0:
+            st.markdown(
+                f"**Standup packet:** {breached_owner_count} owner(s) currently breached with a combined weekly cleanup quota of **{breached_quota_total}** opportunities."
+            )
+            if critical_breach_count > 0:
+                st.markdown(
+                    f"**Escalation packet:** {critical_breach_count} Critical Breach owner(s) with a focused weekly quota of **{critical_breach_quota_total}** opportunities."
+                )
+        else:
+            st.markdown("**Standup packet:** No owners are currently in SLA breach.")
+
+        csv_data = cleanup_plan.to_csv(index=False).encode('utf-8')
+        breached_csv_data = breached_plan.to_csv(index=False).encode('utf-8')
+        critical_breached_csv_data = critical_breach_plan.to_csv(index=False).encode('utf-8')
+        download_col1, download_col2, download_col3, download_col4 = st.columns([2, 2, 2, 3])
+        with download_col1:
+            st.download_button(
+                label='Download Weekly Cleanup Plan (CSV)',
+                data=csv_data,
+                file_name=f"pipeline_owner_cleanup_plan_{pd.to_datetime(filter_end_date).strftime('%Y%m%d')}.csv",
+                mime='text/csv',
+                help='Exports owner-level cleanup priorities and quota targets for weekly operating reviews.'
+            )
+        with download_col2:
+            st.download_button(
+                label='Download Breached Owners (CSV)',
+                data=breached_csv_data,
+                file_name=f"pipeline_owner_breaches_{pd.to_datetime(filter_end_date).strftime('%Y%m%d')}.csv",
+                mime='text/csv',
+                disabled=breached_owner_count == 0,
+                help='Exports only owners in Critical Breach or Watch Breach for leadership standup review.'
+            )
+        with download_col3:
+            st.download_button(
+                label='Download Critical Breaches (CSV)',
+                data=critical_breached_csv_data,
+                file_name=f"pipeline_owner_critical_breaches_{pd.to_datetime(filter_end_date).strftime('%Y%m%d')}.csv",
+                mime='text/csv',
+                disabled=critical_breach_count == 0,
+                help='Exports only Critical Breach owners for immediate escalation review.'
+            )
+        with download_col4:
+            st.caption(
+                f'Rows are highlighted by SLA severity: Critical Breach (red), Watch Breach (amber), and Critical priority (light amber). '
+                f'Export packet ID: {packet_id}.'
+            )
+    else:
+        st.info('No open opportunities are available for owner hygiene analysis in this filter context.')
+
+    st.markdown("### Closed Outcome Diagnostics")
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>What this means:</strong> Closed-lost reason mix explains why opportunities fail, while cycle-time distribution shows process speed quality.
+            Use this to separate messaging/pricing issues from pure pipeline hygiene delay.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    closed_opps = get_closed_pipeline_slice(leads_view, as_of_date=filter_end_date).copy()
+    if len(closed_opps) > 0:
+        if 'opp_close_date' not in closed_opps.columns:
+            close_dates = closed_opps['won_date'] if 'won_date' in closed_opps.columns else pd.NaT
+            closed_opps = closed_opps.assign(opp_close_date=close_dates)
+
+        closed_opps = closed_opps[
+            closed_opps['opp_date'].notna() & closed_opps['opp_close_date'].notna()
+        ].copy()
+
+        if len(closed_opps) > 0:
+            closed_opps['cycle_days'] = (
+                pd.to_datetime(closed_opps['opp_close_date']).dt.normalize() -
+                pd.to_datetime(closed_opps['opp_date']).dt.normalize()
+            ).dt.days.clip(lower=0)
+
+            if 'opp_status' not in closed_opps.columns:
+                closed_opps['opp_status'] = np.where(closed_opps['is_won'] == True, 'Closed Won', 'Closed')
+
+            lost_scope = closed_opps[closed_opps['opp_status'] == 'Closed Lost'].copy()
+
+            outcome_col1, outcome_col2 = st.columns(2)
+            with outcome_col1:
+                if len(lost_scope) > 0 and 'loss_reason' in lost_scope.columns:
+                    reason_counts = (
+                        lost_scope['loss_reason']
+                        .fillna('Unknown')
+                        .value_counts()
+                        .rename_axis('Reason')
+                        .reset_index(name='Count')
+                    )
+                    reason_fig = px.bar(
+                        reason_counts,
+                        x='Reason',
+                        y='Count',
+                        title='Closed-Lost Reasons (Current Selection)',
+                        color_discrete_sequence=[RISK_RED]
+                    )
+                    apply_chart_theme(reason_fig, 'Closed-Lost Reasons (Current Selection)', 'Loss Reason', 'Count', 360)
+                    st.plotly_chart(reason_fig, width='stretch')
+                else:
+                    st.info('No closed-lost reason data is available in the current filter context.')
+
+            with outcome_col2:
+                cycle_fig = px.box(
+                    closed_opps,
+                    x='opp_status',
+                    y='cycle_days',
+                    title='Opportunity Cycle Time by Outcome',
+                    color='opp_status',
+                    color_discrete_map={
+                        'Closed Won': HEALTH_GREEN,
+                        'Closed Lost': RISK_RED,
+                        'Closed': WARNING_AMBER
+                    }
+                )
+                apply_chart_theme(cycle_fig, 'Opportunity Cycle Time by Outcome', 'Outcome', 'Days to Close', 360)
+                st.plotly_chart(cycle_fig, width='stretch')
+
+            st.markdown("#### Closed-Lost Reason Trend")
+            if len(lost_scope) > 0 and 'loss_reason' in lost_scope.columns and 'lost_date' in lost_scope.columns:
+                trend_scope = lost_scope[lost_scope['lost_date'].notna()].copy()
+                if len(trend_scope) > 0:
+                    trend_scope['close_period'] = pd.to_datetime(trend_scope['lost_date']).dt.to_period('Q').astype(str)
+                    reason_trend = trend_scope.groupby(['close_period', 'loss_reason']).size().reset_index(name='Count')
+                    reason_trend = reason_trend.sort_values(['close_period', 'Count'], ascending=[True, False])
+                    reason_trend['quarter_total'] = reason_trend.groupby('close_period')['Count'].transform('sum')
+                    reason_trend['Reason Share (%)'] = np.where(
+                        reason_trend['quarter_total'] > 0,
+                        reason_trend['Count'] / reason_trend['quarter_total'] * 100,
+                        0
+                    )
+
+                    trend_col1, trend_col2 = st.columns(2)
+                    with trend_col1:
+                        trend_fig = px.bar(
+                            reason_trend,
+                            x='close_period',
+                            y='Count',
+                            color='loss_reason',
+                            title='Closed-Lost Reasons by Quarter (Count)',
+                            color_discrete_sequence=[RISK_RED, WARNING_AMBER, PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN]
+                        )
+                        apply_chart_theme(trend_fig, 'Closed-Lost Reasons by Quarter (Count)', 'Quarter', 'Closed Lost Count', 340)
+                        st.plotly_chart(trend_fig, width='stretch')
+
+                    with trend_col2:
+                        share_fig = px.bar(
+                            reason_trend,
+                            x='close_period',
+                            y='Reason Share (%)',
+                            color='loss_reason',
+                            title='Closed-Lost Reason Mix by Quarter (Share %)',
+                            color_discrete_sequence=[RISK_RED, WARNING_AMBER, PRIMARY_BLUE, SECONDARY_BLUE, HEALTH_GREEN]
+                        )
+                        apply_chart_theme(share_fig, 'Closed-Lost Reason Mix by Quarter (Share %)', 'Quarter', 'Closed Lost Share (%)', 340)
+                        share_fig.update_layout(barmode='stack')
+                        share_fig.update_yaxes(range=[0, 100], ticksuffix='%')
+                        st.plotly_chart(share_fig, width='stretch')
+                else:
+                    st.info('No closed-lost dates are available to build a trend in this filter context.')
+            else:
+                st.info('No closed-lost reason trend is available in this filter context.')
+        else:
+            st.info('Closed opportunity dates are incomplete in this filter context.')
+    else:
+        st.info('No closed opportunities are available in this filter context.')
 
 # TAB 2: CHURN & HEALTH
 with tab2:
@@ -1457,6 +2022,15 @@ with tab2:
         <div class='context-callout'>
             <strong>How to read Avg Churn Risk:</strong> The y-axis shows an average <strong>risk score from 0 to 100</strong>, not a direct churn percentage.
             Higher scores indicate stronger probability of churn behavior and require faster CS intervention.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Denominator contract:</strong> Churn rate uses churned customers divided by total customers in the filtered cohort.
+            Churn risk remains a propensity score (0-100), so high score concentration should guide intervention even before observed churn rises.
         </div>
         """,
         unsafe_allow_html=True
@@ -1487,7 +2061,7 @@ with tab2:
             textposition="outside",
             hovertemplate="<b>%{x}</b><br>Avg Risk Score: %{y:.1f}/100<br>%{text}<extra></extra>"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         if len(customers_view) > 0 and len(risk_by_segment[risk_by_segment['Customer Count'] > 0]) < len(segment_axis):
             st.info("Some segments currently have low or zero customer counts in this filter context, but remain visible for complete comparison.")
@@ -1532,7 +2106,7 @@ with tab2:
         fig.add_hline(y=70, line_dash="dash", line_color=WARNING_AMBER, annotation_text="Risk Threshold")
         apply_chart_theme(fig, "Engagement Score vs. Churn Risk", "Engagement Score (0-100)", "Churn Risk (0-100)", 400)
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     
     with col2:
         st.metric("At-Risk Customers", len(at_risk), delta=None)
@@ -1568,7 +2142,7 @@ with tab2:
         )
         st.dataframe(
             at_risk_table,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             column_config={
                 'segment': st.column_config.TextColumn('Segment'),
@@ -1596,6 +2170,15 @@ with tab3:
         <div class='context-callout'>
             <strong>Why this matters:</strong> Expansion ARR shows immediate upside from existing customers.
             Cohort retention shows whether newly acquired groups are staying longer over time, which is a leading indicator of durable growth.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Denominator contract:</strong> Expansion rate is calculated as expansion ARR divided by active base ARR in the current filter context.
+            This avoids overstating growth when churned accounts are included in the denominator.
         </div>
         """,
         unsafe_allow_html=True
@@ -1632,7 +2215,7 @@ with tab3:
             hovertemplate="<b>%{x}</b><br>%{fullData.name}: %{y:.2f}M<extra></extra>"
         )
         fig.update_yaxes(tickformat=".2f", ticksuffix="M")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     
     with col1:
         cohort_analysis = customers_view.groupby('cohort').agg({
@@ -1654,7 +2237,7 @@ with tab3:
         )
         fig.update_traces(line=dict(color=SECONDARY_BLUE, width=3), marker=dict(color=PRIMARY_BLUE, size=8))
         apply_chart_theme(fig, "Cohort Retention Rate Over Time", "Cohort", "Retention (%)", 350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         if len(cohort_analysis) > 1:
             oldest_retention = cohort_analysis.iloc[0]['Retention (%)']
@@ -1719,7 +2302,7 @@ with tab4:
 
         apply_chart_theme(fig, "12-Month ARR Forecast", "Months Forward", "ARR ($M)", 400)
         fig.update_layout(hovermode='x unified')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     
     with col2:
         month_6_arr_m = forecast_df_custom[forecast_df_custom['Month'] == 6]['Projected ARR'].values[0]
@@ -1778,6 +2361,7 @@ with tab5:
     st.markdown("**Execution Notes:**")
     st.markdown("- Review this playbook after every filter or scenario change.")
     st.markdown("- Priority legend: Critical = intervene now, High = close a gap, Monitor = maintain current performance.")
+    st.markdown("- Pipeline priority now separates conversion intervention from backlog hygiene cleanup so teams can assign the right motion.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
     st.markdown("- Projected impacts are directional estimates based on the current filtered operating context.")
 

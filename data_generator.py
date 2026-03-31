@@ -22,6 +22,17 @@ def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_l
     # Customer segments
     segments = ['Healthcare', 'Finance', 'Tech/SaaS', 'Non-Profit', 'Manufacturing']
     segment_dist = [0.35, 0.25, 0.20, 0.15, 0.05]
+
+    # Opportunity owners for pipeline execution attribution.
+    opportunity_owners = [
+        'A. Rivera',
+        'J. Patel',
+        'M. Thompson',
+        'S. Kim',
+        'R. Gupta',
+        'T. Nguyen'
+    ]
+    owner_weights = [0.20, 0.18, 0.16, 0.16, 0.15, 0.15]
     
     # Deal sizes by segment (ARR)
     deal_sizes = {
@@ -84,21 +95,64 @@ def generate_saas_data(start_date='2023-01-01', end_date='2026-03-27', monthly_l
         lambda x: x['sql_date'] + timedelta(days=np.random.randint(7, 21)) if x['is_opp'] else pd.NaT,
         axis=1
     )
+    leads_df['opportunity_owner'] = None
+    opp_indices = leads_df.index[leads_df['is_opp']]
+    if len(opp_indices) > 0:
+        leads_df.loc[opp_indices, 'opportunity_owner'] = np.random.choice(
+            opportunity_owners,
+            len(opp_indices),
+            p=owner_weights
+        )
     
-    # Deal closure
-    leads_df['is_won'] = leads_df['is_opp'] & (np.random.binomial(1, conversion_rates['Opportunity to Won'], len(leads_df)) == 1)
-    leads_df['won_date'] = leads_df.apply(
-        lambda x: x['opp_date'] + timedelta(days=np.random.randint(
-            sales_cycle[x['segment']][0],
-            sales_cycle[x['segment']][1]
-        )) if x['is_won'] else pd.NaT,
+    # Opportunity lifecycle: opportunities can remain open or close as won/lost within the observed window.
+    leads_df['opp_decision_days'] = leads_df.apply(
+        lambda x: np.random.randint(sales_cycle[x['segment']][0], sales_cycle[x['segment']][1]) if x['is_opp'] else np.nan,
         axis=1
     )
+    leads_df['opp_decision_date'] = leads_df.apply(
+        lambda x: x['opp_date'] + timedelta(days=int(x['opp_decision_days'])) if x['is_opp'] else pd.NaT,
+        axis=1
+    )
+    leads_df['is_closed'] = leads_df['is_opp'] & (leads_df['opp_decision_date'] <= end)
 
-    # Exclude modeled closes after the dataset window to avoid future-dated customer starts.
-    future_wins_mask = leads_df['is_won'] & (leads_df['won_date'] > end)
-    leads_df.loc[future_wins_mask, 'is_won'] = False
-    leads_df.loc[future_wins_mask, 'won_date'] = pd.NaT
+    won_draw = np.random.binomial(1, conversion_rates['Opportunity to Won'], len(leads_df)) == 1
+    leads_df['is_won'] = leads_df['is_closed'] & won_draw
+    leads_df['is_lost'] = leads_df['is_closed'] & (~leads_df['is_won'])
+
+    leads_df['won_date'] = leads_df.apply(
+        lambda x: x['opp_decision_date'] if x['is_won'] else pd.NaT,
+        axis=1
+    )
+    leads_df['lost_date'] = leads_df.apply(
+        lambda x: x['opp_decision_date'] if x['is_lost'] else pd.NaT,
+        axis=1
+    )
+    leads_df['opp_close_date'] = leads_df['won_date'].fillna(leads_df['lost_date'])
+
+    loss_reasons = ['Price', 'No Decision', 'Lost to Competitor', 'Timing', 'Feature Gap']
+    loss_reason_weights = [0.28, 0.24, 0.22, 0.16, 0.10]
+    leads_df['loss_reason'] = None
+    lost_indices = leads_df.index[leads_df['is_lost']]
+    if len(lost_indices) > 0:
+        leads_df.loc[lost_indices, 'loss_reason'] = np.random.choice(
+            loss_reasons,
+            len(lost_indices),
+            p=loss_reason_weights
+        )
+
+    leads_df['opp_status'] = np.select(
+        [
+            ~leads_df['is_opp'],
+            leads_df['is_won'],
+            leads_df['is_lost']
+        ],
+        [
+            'No Opportunity',
+            'Closed Won',
+            'Closed Lost'
+        ],
+        default='Open'
+    )
     
     # ARR for won deals
     leads_df['arr'] = leads_df.apply(

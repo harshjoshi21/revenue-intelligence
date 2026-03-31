@@ -66,8 +66,17 @@ The app uses realistic SaaS simulation to model funnel performance, churn risk, 
 **📈 Sales Funnel Analysis**
 - Two-panel pipeline diagnostics: stage volume funnel + stage conversion vs target chart
 - Auto-identify the largest stage-to-stage conversion drop for immediate intervention
-- Track stuck opportunities by channel (defined as open opportunities older than 30 days)
+- Track stuck opportunities by channel (defined as currently open opportunities older than 30 days)
+- Opportunity lifecycle realism: open, closed-won, and closed-lost states are simulated within the analysis window
 - Drill into oldest opportunities to prioritize channel-level follow-up
+- Pipeline hygiene by owner table with SLA status and weekly cleanup quota targets
+- SLA severity highlighting and downloadable weekly owner cleanup plan (CSV)
+- Breached-owner CSV export for leadership standup packets (Critical/Watch breaches only)
+- Critical Breach-only CSV export for immediate escalation review
+- Export files include packet ID and filter snapshot metadata for traceable leadership reviews
+- Closed outcome diagnostics: loss-reason mix and cycle-time distribution by won vs lost outcomes
+- Closed-lost trend by quarter in both count and share terms to identify recurring root-cause mix shifts
+- Explicit denominator contract: conversion and stuck metrics are tied to the filtered cohort and as-of-date state
 
 **⚠️ Customer Health & Churn Risk**
 - Segment chart uses average churn risk score on a 0-100 scale (higher score = higher churn likelihood)
@@ -119,12 +128,14 @@ The app uses realistic SaaS simulation to model funnel performance, churn risk, 
 - **What-If Slider**: Test impact of improving SQL→Won conversion rate
 
 ### Drilling Into the Data
-1. **Pipeline Risks**: Identify conversion bottlenecks, compare conversion rates against target, and isolate stuck opportunities older than 30 days
+1. **Pipeline Risks**: Identify conversion bottlenecks, compare conversion rates against target, and isolate currently open stuck opportunities older than 30 days
 2. **Customer Health Actions**: Prioritize high-risk accounts and intervention signals
 3. **Expansion Levers**: Understand segment-level expansion and cohort retention momentum with interpretation context
 4. **Scenario Forecast**: Model ARR outcomes under different assumptions
 5. **Action Playbook**: Use priority cards to map observed signals to owner-level actions, SLA, and projected impact
 6. **Quick Win Signal**: Use the highlighted top opportunity to decide what should be executed first this cycle
+
+Each core tab includes a denominator contract note so benchmark interpretation remains defensible when filters change.
 
 ## Data Simulation
 
@@ -168,6 +179,24 @@ All data is statistically realistic for portfolio demonstration and intentionall
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+### Quick QA Smoke Check
+
+Run this before sharing updates to validate core data contracts and main Streamlit interaction flows:
+
+```bash
+python qa_smoke.py
+```
+
+### CI Smoke Automation
+
+This repo also runs the same smoke suite automatically via GitHub Actions using [.github/workflows/qa-smoke.yml](.github/workflows/qa-smoke.yml).
+
+- Triggered on pushes to `main` and `dev`
+- Triggered on pull requests targeting `main` and `dev`
+- Can be run manually from GitHub Actions via `Run workflow`
+
+The workflow installs dependencies from `requirements.txt` and runs `python qa_smoke.py`.
 
 ## Deployment
 

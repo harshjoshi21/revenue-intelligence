@@ -32,18 +32,33 @@ jobs:
         run: |
           CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
           HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
+          ROOT_URL="${CLEAN_APP_URL%/}/"
 
-          echo "Pinging $HEALTH_URL"
-          STATUS_CODE=$(curl --silent --show-error --max-time 30 \
+          echo "Warming health endpoint: $HEALTH_URL"
+          HEALTH_STATUS=$(curl --silent --show-error --max-time 45 \
             --retry 3 --retry-delay 5 --retry-connrefused \
+            --location --max-redirs 5 \
             --user-agent "github-actions-streamlit-keepalive" \
             --output /dev/null --write-out "%{http_code}" \
             "$HEALTH_URL")
 
-          echo "Ping status: $STATUS_CODE"
+          echo "Health warm status: $HEALTH_STATUS"
+          if [ "$HEALTH_STATUS" -ne 200 ]; then
+            echo "Health warm-up failed for $HEALTH_URL with status $HEALTH_STATUS"
+            exit 1
+          fi
 
-          if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 400 ]; then
-            echo "Ping failed for $HEALTH_URL with status $STATUS_CODE"
+          echo "Warming root URL: $ROOT_URL"
+          ROOT_STATUS=$(curl --silent --show-error --max-time 45 \
+            --retry 3 --retry-delay 5 --retry-connrefused \
+            --location --max-redirs 5 \
+            --user-agent "github-actions-streamlit-keepalive" \
+            --output /dev/null --write-out "%{http_code}" \
+            "$ROOT_URL")
+
+          echo "Root warm status: $ROOT_STATUS"
+          if [ "$ROOT_STATUS" -ne 200 ]; then
+            echo "Root warm-up failed for $ROOT_URL with status $ROOT_STATUS"
             exit 1
           fi
 
@@ -53,17 +68,25 @@ jobs:
         run: |
           CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
           HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
+          HEALTH_BODY_FILE=$(mktemp)
 
-          STATUS_CODE=$(curl --silent --show-error --max-time 30 \
+          STATUS_CODE=$(curl --silent --show-error --max-time 45 \
             --retry 2 --retry-delay 3 --retry-connrefused \
-            --output /dev/null --write-out "%{http_code}" \
+            --location --max-redirs 5 \
+            --output "$HEALTH_BODY_FILE" --write-out "%{http_code}" \
             --user-agent "github-actions-streamlit-healthcheck" \
             "$HEALTH_URL")
 
           echo "Health check status: $STATUS_CODE"
 
-          if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 400 ]; then
+          if [ "$STATUS_CODE" -ne 200 ]; then
             echo "Health check failed for $HEALTH_URL with status $STATUS_CODE"
+            exit 1
+          fi
+
+          HEALTH_BODY="$(tr -d '[:space:]' < "$HEALTH_BODY_FILE")"
+          if [ "$HEALTH_BODY" != "ok" ]; then
+            echo "Health check body validation failed. Expected 'ok', got: '$HEALTH_BODY'"
             exit 1
           fi
 

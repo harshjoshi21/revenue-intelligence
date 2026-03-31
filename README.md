@@ -72,11 +72,18 @@ The app uses realistic SaaS simulation to model funnel performance, churn risk, 
 
 **🎯 Benchmark Lens Interpretation**
 - Compare Churn, NRR, SQL→Won, and Expansion against target benchmark ranges
+- Adaptive fourth benchmark card: Expansion Rate in Expansion Focus, Pipeline Hygiene in other modes
 - Use status signals (Healthy, Watch, Action) to quickly decide where intervention is needed
 
 **⚡ Quick Win + Projected Action Impact**
 - Surface the highest immediate upside lever based on the active filtered context
 - Translate each playbook action into directional ARR impact estimates for faster prioritization
+
+**🧭 Scenario Readability and Guidance**
+- Filter-sensitive disclaimers are shown in executive and tab sections to prompt scenario testing
+- Each disclaimer includes a short example so users understand how to drive metric changes
+- Root-cause preview is elevated as a high-visibility callout with direct guidance to Closed Outcome Diagnostics
+- Negative outcome metrics (for example Closed-Lost and stale pipeline counts) use inverse/red semantics
 
 **🧭 Action Playbook Cards**
 - Executive-style priority cards (Critical/High/Monitor) with owner, SLA, trigger, and immediate action
@@ -187,13 +194,16 @@ This project follows a release-first branching model for portfolio clarity.
 5. Direct commits to main should be avoided unless explicitly required.
 
 Current release status:
-- Latest release tag: v2.1.0
+- Latest stable release tag: v2.1.1
+- Current development release target: v2.2.0 (on dev, pending promotion to main)
 - main carries stable tagged releases; dev is the active development branch
 
 Supporting release documentation:
+- Current development release notes: [RELEASE_v2.2.0.md](RELEASE_v2.2.0.md)
+- Latest stable release summary: [RELEASE_v2.1.1.md](RELEASE_v2.1.1.md)
 - Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
 - Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)
-- Latest release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
+- Prior stable release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
 - Historical v2.0 summary: [docs/archive/RELEASE_v2.0.0.md](docs/archive/RELEASE_v2.0.0.md)
 
 ## Keep-Alive Automation (GitHub Actions)

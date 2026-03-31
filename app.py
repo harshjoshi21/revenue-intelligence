@@ -24,6 +24,42 @@ st.markdown("""
         --slate-50: #f6f8fb;
         --slate-200: #d6dce5;
         --ink-900: #1f2937;
+        --danger-red: #b42318;
+        --danger-red-soft: #fff5f4;
+    }
+    html, body, [class*="css"] {
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+    .stApp {
+        background: radial-gradient(circle at 8% -10%, #eef4fb 0, #f8fafc 36%, #ffffff 75%);
+    }
+    h1, h2, h3, [data-testid="stMarkdownContainer"] h1, [data-testid="stMarkdownContainer"] h2, [data-testid="stMarkdownContainer"] h3 {
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        letter-spacing: 0;
+    }
+    div[data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid var(--slate-200);
+        border-left: 4px solid var(--navy-700);
+        border-radius: 12px;
+        padding: 10px 12px;
+        box-shadow: 0 8px 16px rgba(16, 35, 61, 0.05);
+        min-height: 108px;
+    }
+    div[data-testid="stMetricLabel"] p {
+        color: #475569;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: 0.73rem;
+    }
+    div[data-testid="stMetricValue"] {
+        color: var(--navy-900);
+        font-weight: 800;
+    }
+    div[data-testid="stMetricDelta"] {
+        font-size: 0.8rem;
+        font-weight: 700;
     }
     .hero-wrap {
         background: #ffffff;
@@ -65,6 +101,7 @@ st.markdown("""
         line-height: 1.15;
         margin: 0 !important;
         padding: 0 !important;
+        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
         font-weight: 700;
         color: var(--navy-900);
         text-align: left;
@@ -165,6 +202,7 @@ st.markdown("""
     .insight-card {
         background: #fff;
         border: 1px solid var(--slate-200);
+        border-top: 4px solid #c7d6eb;
         border-radius: 10px;
         padding: 12px;
         height: 118px;
@@ -278,13 +316,46 @@ st.markdown("""
         font-size: 0.9rem;
     }
     .context-callout {
-        background: #fff8e8;
+        background: linear-gradient(135deg, #fff8e8 0%, #fffdf7 100%);
         border-left: 4px solid var(--gold-500);
         border-radius: 8px;
         padding: 12px;
         margin: 0 0 14px 0;
         color: #4b5563;
         font-size: 0.86rem;
+    }
+    .filter-disclaimer {
+        background: #f3f8ff;
+        border: 1px solid #c7dcf8;
+        border-left: 4px solid #2b6cb0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 0 0 12px 0;
+        color: #1e3a5f;
+        font-size: 0.84rem;
+        line-height: 1.4;
+    }
+    .loss-preview-callout {
+        background: #fff5f4;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #dc2626;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 0 0 12px 0;
+        color: #7f1d1d;
+        font-size: 0.86rem;
+        line-height: 1.4;
+    }
+    .loss-preview-neutral {
+        background: #f8fafc;
+        border: 1px solid #dbe3ee;
+        border-left: 4px solid #64748b;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 0 0 12px 0;
+        color: #334155;
+        font-size: 0.84rem;
+        line-height: 1.4;
     }
     .table-context {
         margin: 2px 0 8px 0;
@@ -1083,6 +1154,18 @@ def render_section_header(icon, title, description):
     )
 
 
+def render_filter_disclaimer(example_text):
+    st.markdown(
+        f"""
+        <div class='filter-disclaimer'>
+            <strong>Filter-sensitive:</strong> Numbers in this section update when you change the left-panel Date, Channel, Segment, View Mode, or What-If inputs.
+            <br><strong>Example:</strong> {example_text}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def render_playbook_card(row):
     priority = row['Priority']
     if priority == "Critical":
@@ -1225,16 +1308,22 @@ with col4:
 pulse_col1, pulse_col2 = st.columns(2)
 with pulse_col1:
     stale_60_delta = (
-        f"{baseline_operating_metrics['open_opp_stale_60_pct']:.1f}% of open opportunities"
+        f"+{baseline_operating_metrics['open_opp_stale_60_pct']:.1f}% of open opportunities"
         if baseline_operating_metrics['open_opp_count'] > 0
         else "No open opportunities in baseline"
     )
-    st.metric("Open Opp >=60 Days", f"{baseline_operating_metrics['open_opp_stale_60_count']:,}", delta=stale_60_delta)
+    st.metric(
+        "Open Opp >=60 Days",
+        f"{baseline_operating_metrics['open_opp_stale_60_count']:,}",
+        delta=stale_60_delta,
+        delta_color="inverse"
+    )
 with pulse_col2:
     st.metric(
         "Closed-Lost Rate",
         f"{baseline_operating_metrics['closed_lost_rate']:.1f}%",
-        delta=f"{baseline_operating_metrics['closed_lost_count']:,} lost opportunities"
+        delta=f"+{baseline_operating_metrics['closed_lost_count']:,} lost opportunities",
+        delta_color="inverse"
     )
 
 st.divider()
@@ -1338,6 +1427,7 @@ operating_metrics = derive_operating_metrics(leads_view, customers_view, as_of_d
 
 # Phase 1: dynamic executive insight strip
 st.markdown("### Top Insights for Current Selection")
+render_filter_disclaimer("Set View Mode to At-Risk Focus and narrow Segment to Healthcare to see at-risk share and top insight priorities shift immediately.")
 
 if len(leads_view) > 0 or len(customers_view) > 0:
     at_risk_customers = customers_view[customers_view['churn_risk'] > 70] if len(customers_view) > 0 else customers_view
@@ -1360,14 +1450,30 @@ if len(leads_view) > 0 or len(customers_view) > 0:
         top_segment_text = "No active segment expansion signal in this selection yet."
 
     closed_for_insight = get_closed_pipeline_slice(leads_view, as_of_date=filter_end_date).copy()
-    lost_reason_teaser = "No closed-lost reason signal in this filter context yet."
+    closed_lost_scope = pd.DataFrame()
+    lost_reason_preview_html = """
+    <div class='loss-preview-neutral'>
+        <strong>Root-cause preview:</strong> No closed-lost reason signal is available in this filter context yet.
+        <br><strong>Next step:</strong> Open <strong>Pipeline Risks</strong> and review <strong>Closed Outcome Diagnostics</strong> once closed-lost data appears.
+    </div>
+    """
     if len(closed_for_insight) > 0 and 'opp_status' in closed_for_insight.columns and 'loss_reason' in closed_for_insight.columns:
-        lost_reason_scope = closed_for_insight[closed_for_insight['opp_status'] == 'Closed Lost'].copy()
-        if len(lost_reason_scope) > 0:
-            reason_counts = lost_reason_scope['loss_reason'].fillna('Unknown').value_counts()
+        closed_lost_scope = closed_for_insight[closed_for_insight['opp_status'] == 'Closed Lost'].copy()
+        if len(closed_lost_scope) > 0:
+            reason_counts = closed_lost_scope['loss_reason'].fillna('Unknown').value_counts()
             top_reason = reason_counts.index[0]
             top_reason_count = int(reason_counts.iloc[0])
-            lost_reason_teaser = f"Top closed-lost reason: {top_reason} ({top_reason_count} opportunities)."
+            closed_lost_count_filtered = len(closed_lost_scope)
+            top_reason_share = (top_reason_count / closed_lost_count_filtered * 100) if closed_lost_count_filtered > 0 else 0
+            lost_reason_preview_html = f"""
+            <div class='loss-preview-callout'>
+                <strong>Root-cause preview (high impact):</strong> <strong>{top_reason}</strong> is the top closed-lost reason,
+                driving <strong>{top_reason_count}</strong> lost opportunities ({top_reason_share:.1f}% of closed-lost in this filtered view).
+                This signal comes from closed-lost reason counts in your current filters.
+                <br><strong>Next step:</strong> Open <strong>Pipeline Risks</strong> and scroll to <strong>Closed Outcome Diagnostics</strong>
+                to inspect reason mix, cycle time, and quarterly trend before deciding action.
+            </div>
+            """
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -1392,12 +1498,13 @@ if len(leads_view) > 0 or len(customers_view) > 0:
         </div>
         """, unsafe_allow_html=True)
 
-    st.caption(f"Root-cause preview: {lost_reason_teaser}")
+    st.markdown(lost_reason_preview_html, unsafe_allow_html=True)
 else:
     st.warning("Not enough filtered data to generate executive insights. Widen date range or adjust segment/channel filters.")
 
 st.markdown("### Benchmark Lens")
 st.caption("Compare current performance against operating benchmarks to decide whether to hold, monitor, or intervene. The fourth benchmark adapts to your view mode.")
+render_filter_disclaimer("Switch from All Accounts to Expansion Focus and the fourth card will pivot from Pipeline Hygiene to Expansion Rate with a new benchmark signal.")
 
 churn_rate_view = operating_metrics['churn_rate']
 nrr_view = operating_metrics['current_nrr']
@@ -1474,6 +1581,7 @@ with tab1:
         """,
         unsafe_allow_html=True
     )
+    render_filter_disclaimer("Select one channel (for example, LinkedIn Ads) and a tighter date range to see stage counts, conversion leakage, and owner hygiene backlog recalculate.")
     st.markdown(
         """
         <div class='context-callout'>
@@ -1636,9 +1744,9 @@ with tab1:
     with lifecycle_col2:
         st.metric("Currently Open", f"{open_opportunity_count:,}")
     with lifecycle_col3:
-        st.metric("Closed Lost", f"{closed_lost_count:,}")
+        st.metric("Closed Lost", f"{closed_lost_count:,}", delta="+Higher is worse", delta_color="inverse")
     with lifecycle_col4:
-        st.metric("Open >=60 Days", f"{stale_60_count:,}", delta=f"Median age {median_open_age} days")
+        st.metric("Open >=60 Days", f"{stale_60_count:,}", delta=f"+Median age {median_open_age} days", delta_color="inverse")
 
     stuck_cutoff_date = pd.to_datetime(filter_end_date) - timedelta(days=30)
     stuck_scope = open_opportunities[
@@ -2084,6 +2192,7 @@ with tab2:
         """,
         unsafe_allow_html=True
     )
+    render_filter_disclaimer("Filter to Finance plus At-Risk Focus to see the at-risk count, risk bars, and intervention table concentrate on the highest-risk accounts.")
     st.markdown(
         """
         <div class='context-callout'>
@@ -2176,8 +2285,12 @@ with tab2:
         st.plotly_chart(fig, width='stretch')
     
     with col2:
-        st.metric("At-Risk Customers", len(at_risk), delta=None)
-        st.metric("Healthy Customers", len(healthy), delta=None)
+        at_risk_share = (len(at_risk) / len(customers_view) * 100) if len(customers_view) > 0 else 0
+        healthy_share = (len(healthy) / len(customers_view) * 100) if len(customers_view) > 0 else 0
+        at_risk_delta = f"+{at_risk_share:.1f}% of filtered customers" if len(customers_view) > 0 else None
+        healthy_delta = f"{healthy_share:.1f}% of filtered customers" if len(customers_view) > 0 else None
+        st.metric("At-Risk Customers", len(at_risk), delta=at_risk_delta, delta_color="inverse")
+        st.metric("Healthy Customers", len(healthy), delta=healthy_delta, delta_color="normal")
         if len(at_risk) > 0:
             st.markdown(f"**Action**: {len(at_risk)} customers need engagement intervention")
     
@@ -2232,6 +2345,7 @@ with tab3:
         """,
         unsafe_allow_html=True
     )
+    render_filter_disclaimer("Choose Expansion Focus and one segment to compare how Total Expansion ARR and Avg Expansion Rate change versus the full portfolio view.")
     st.markdown(
         """
         <div class='context-callout'>
@@ -2333,6 +2447,7 @@ with tab4:
         """,
         unsafe_allow_html=True
     )
+    render_filter_disclaimer("Change date range to a recent quarter, then move What-If Conversion from 0% to 15% to see projected 6-month and 12-month ARR deltas update.")
 
     # Build forecast with what-if impact
     current_arr = customers_view[customers_view['is_churned'] == 0]['arr'].sum()
@@ -2406,6 +2521,7 @@ with tab5:
         """,
         unsafe_allow_html=True
     )
+    render_filter_disclaimer("Narrow to one segment and channel to see priority labels, owners, and projected impacts re-rank for that exact operating scenario.")
 
     impact_by_key = {row['key']: row for row in impact_rows}
     playbook_rows = build_playbook_rows(operating_metrics, impact_by_key)

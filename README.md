@@ -2,64 +2,34 @@
 
 ## [Launch the App](https://revenue-intelligence.streamlit.app/)
 
-Note: First-time loads and wake-ups from sleep mode can take about 60 seconds. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
-
-Predictive Analytics for Retention, Expansion, and Revenue Decisions
+Note: First-time loads and wake-ups from sleep mode can take about 1-2 minutes. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
 
 ## Executive Brief
 
-This project is designed as an executive operating view, not a dashboard for passive reporting.
-The goal is to help leadership teams align Customer Success, RevOps, and Growth around one question:
+This project is designed as an executive operating view that helps leadership teams align Customer Success, RevOps, and Growth around one question:
 
 How do we protect and grow ARR this quarter with the highest-confidence actions first?
 
-It helps answer:
+Key decisions this supports:
 - Which accounts should Customer Success prioritize this week to reduce churn exposure?
 - Where is the pipeline conversion process breaking, and which stage needs intervention?
 - Which customer segments/cohorts offer the strongest expansion and NRR opportunity?
 
 It also provides scenario visibility for how ARR trajectory shifts under different operating assumptions.
 
-## What a C-Level Review Gets in Minutes
+## Executive Walkthrough (2 Minutes)
 
-- A concise ARR risk and growth snapshot
-- A ranked intervention path by urgency and business impact
-- Owner-level execution signals (not just descriptive metrics)
-- A defensible narrative from signal to action to forecast impact
-
-## How to Evaluate This Project in 60 Seconds
-
-1. Open Executive Snapshot to frame current ARR risk and growth posture.
-2. Read Top Insights for Current Selection to see the current priority stack.
-3. Toggle Executive View Mode to pressure-test how priorities change.
-4. Open Action Playbook to confirm who should do what, by when, and why.
-
-## How to Evaluate This Project in 2 Minutes (Leadership Review)
-
-1. Intent and credibility (0:00-0:30): confirm business framing, metric contracts, and leadership relevance.
-2. Signal quality (0:30-1:00): scan Executive Snapshot, Top Insights, and Benchmark Lens.
-3. Operational depth (1:00-1:30): inspect one funnel, one churn, and one expansion slice.
-4. Actionability (1:30-2:00): validate playbook priorities, SLA windows, and projected impact.
-
-## Project Walkthrough
-
-1. Start with Executive Snapshot to establish the current operating baseline.
-2. Use filters to isolate a realistic scenario: date, channel, segment, and executive view mode.
-3. Review pipeline quality and hygiene to identify where revenue conversion is leaking.
-4. Move to churn risk and engagement to identify where ARR is exposed.
-5. Review expansion and cohort signals to identify where ARR can be accelerated.
-6. Use forecast and what-if controls to translate operating changes into projected ARR movement.
-7. End with Action Playbook to convert findings into owner-level execution.
+Use this sequence for a fast leadership review:
+1. Open Executive Snapshot and Top Insights to frame risk and upside quickly.
+2. Set one realistic scenario with date, channel, segment, and executive view mode.
+3. Review pipeline quality and hygiene to identify conversion leakage.
+4. Review churn risk and engagement signals to identify ARR exposure.
+5. Review expansion and cohort trends to identify growth acceleration opportunities.
+6. Use forecast and what-if controls, then confirm execution owners and SLA windows in Action Playbook.
 
 ## Portfolio Context (For Senior Leaders)
 
 This is a personal portfolio project that demonstrates how I structure decision support across Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering.
-
-## Why This Is Useful
-
-- It connects customer behavior and process quality to financial outcomes.
-- It helps teams choose priority actions instead of debating disconnected metrics.
-- It creates a common operating language across leadership functions.
 
 ## Methodology Note
 

@@ -1,6 +1,6 @@
 # Customer Lifecycle Intelligence
 
-## [Launch the App](https://revenue-intelligence.streamlit.app/)
+## 🚀 [Launch the App](https://revenue-intelligence.streamlit.app/)
 
 Note: First-time loads and wake-ups from sleep mode can take about 1-2 minutes. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
 

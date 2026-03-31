@@ -1238,8 +1238,10 @@ with col_d:
 st.markdown(
     """
     <div class='context-callout'>
-        <strong>Methodology:</strong> This project uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes.
-        Assumptions are transparent so leaders can validate drivers, calibrate confidence, and translate insights into owner-level execution.
+        <strong>Methodology Summary:</strong> This project was developed through a planning-led, AI-assisted vibe-coding workflow (Claude + GitHub Copilot),
+        with synthetic dataset generation built from scratch.
+        It combines realistic SaaS simulation, transparent assumptions, and iterative QA/release refinement so leaders can validate drivers,
+        calibrate confidence, and translate insights into owner-level execution.
     </div>
     """,
     unsafe_allow_html=True

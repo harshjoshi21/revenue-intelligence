@@ -1,9 +1,8 @@
 # v2.2.0 Release Notes
 
-Status: Development release package on `dev`  
-Target tag on main: v2.2.0  
-Prepared: 2026-03-31  
-Branch: dev
+Released: 2026-03-31  
+Tag: v2.2.0  
+Branch: main
 
 ## Overview
 
@@ -45,14 +44,16 @@ v2.2.0 advances the app from a strong analytics dashboard into a more guided exe
 
 ### Documentation and Versioning
 
-- Updated README release status to reflect stable v2.1.1 and dev target v2.2.0
+- Updated README release status to reflect stable v2.2.0 and next development target
 - Added release notes for v2.2.0 and backfilled v2.1.1 release summary for continuity
+- Aligned README and in-app methodology summary with planning-led, from-scratch synthetic data generation and AI-assisted workflow context
 
 ## Validation Summary
 
 - App diagnostics: no errors in `app.py`
 - Python compile checks: pass
 - Smoke suite (`qa_smoke.py`): pass (12/12)
+- Release docs/metadata alignment: pass (README + release notes synchronized)
 
 ## Compatibility and Upgrade Notes
 
@@ -60,6 +61,6 @@ v2.2.0 advances the app from a strong analytics dashboard into a more guided exe
 - Local run flow unchanged (`pip install -r requirements.txt`, `streamlit run app.py`)
 - QA command unchanged (`python qa_smoke.py`)
 
-## Proposed GitHub Release Title
+## GitHub Release Title
 
 v2.2.0 - Executive guidance, filter clarity, and root-cause visibility

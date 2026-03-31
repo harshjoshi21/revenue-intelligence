@@ -27,13 +27,22 @@ Use this sequence for a fast leadership review:
 5. Review expansion and cohort trends to identify growth acceleration opportunities.
 6. Use forecast and what-if controls, then confirm execution owners and SLA windows in Action Playbook.
 
-## Portfolio Context (For Senior Leaders)
+## Portfolio Context
 
-This is a personal portfolio project that demonstrates how I structure decision support across Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering.
+This is a personal portfolio project that demonstrates decision-support design across Customer Success, RevOps, and Growth functions, with scenario modeling and QA-driven product operations.
+
+### Functional Scope Covered
+
+- Executive analytics product design and decision-flow structuring
+- Revenue funnel and lifecycle analytics (pipeline, churn, expansion, forecast)
+- Scenario testing and KPI benchmarking for operating decisions
+- QA and release hygiene for analytics product maintenance
 
 ## Methodology Note
 
-The app uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes. Assumptions are intentionally transparent so leaders can validate drivers, calibrate confidence, and translate insights into owner-level execution.
+The methodology combines product planning, synthetic data generation from scratch, and iterative analytics build cycles. The app uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes, with assumptions kept transparent so leaders can validate drivers and calibrate confidence.
+
+Development followed an AI-assisted vibe-coding workflow (Claude and GitHub Copilot), with direction led through ideation, planning, execution management, and ongoing maintenance/QA updates.
 
 ## Features
 
@@ -194,16 +203,16 @@ This project follows a release-first branching model for portfolio clarity.
 5. Direct commits to main should be avoided unless explicitly required.
 
 Current release status:
-- Latest stable release tag: v2.1.1
-- Current development release target: v2.2.0 (on dev, pending promotion to main)
+- Latest stable release tag: v2.2.0
+- Current development release target: v2.2.1 (on dev)
 - main carries stable tagged releases; dev is the active development branch
 
 Supporting release documentation:
-- Current development release notes: [RELEASE_v2.2.0.md](RELEASE_v2.2.0.md)
-- Latest stable release summary: [RELEASE_v2.1.1.md](RELEASE_v2.1.1.md)
+- Latest stable release summary: [RELEASE_v2.2.0.md](RELEASE_v2.2.0.md)
+- Prior stable release summary: [RELEASE_v2.1.1.md](RELEASE_v2.1.1.md)
 - Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
 - Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)
-- Prior stable release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
+- Earlier stable release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
 - Historical v2.0 summary: [docs/archive/RELEASE_v2.0.0.md](docs/archive/RELEASE_v2.0.0.md)
 
 ## Keep-Alive Automation (GitHub Actions)
@@ -225,3 +234,11 @@ You can trigger it anytime from GitHub -> Actions -> `Streamlit Keep Alive` -> `
 Note: This helps reduce cold starts but platform-level sleep policies may still apply.
 
 ---
+
+## Build Attribution and Usage
+
+This project was developed through a vibe-coding workflow using Claude and GitHub Copilot, including both the application code and synthetic dataset generation logic built from scratch.
+
+My role covered end-to-end product ownership: ideation, planning, technical direction, execution management, and ongoing maintenance and updates.
+
+This repository is shared for educational and practical learning use. Anyone may use, adapt, and learn from this work. No formal software license is attached.

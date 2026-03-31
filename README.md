@@ -2,68 +2,47 @@
 
 ## [Launch the App](https://revenue-intelligence.streamlit.app/)
 
-Note: First-time loads and wake-ups from sleep mode can take about 60 seconds. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
-
-Predictive Analytics for Retention, Expansion, and Revenue Decisions
+Note: First-time loads and wake-ups from sleep mode can take about 1-2 minutes. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
 
 ## Executive Brief
 
-This project is designed as an executive operating view, not a dashboard for passive reporting.
-The goal is to help leadership teams align Customer Success, RevOps, and Growth around one question:
+This project is designed as an executive operating view that helps leadership teams align Customer Success, RevOps, and Growth around one question:
 
 How do we protect and grow ARR this quarter with the highest-confidence actions first?
 
-It helps answer:
+Key decisions this supports:
 - Which accounts should Customer Success prioritize this week to reduce churn exposure?
 - Where is the pipeline conversion process breaking, and which stage needs intervention?
 - Which customer segments/cohorts offer the strongest expansion and NRR opportunity?
 
 It also provides scenario visibility for how ARR trajectory shifts under different operating assumptions.
 
-## What a C-Level Review Gets in Minutes
+## Executive Walkthrough (2 Minutes)
 
-- A concise ARR risk and growth snapshot
-- A ranked intervention path by urgency and business impact
-- Owner-level execution signals (not just descriptive metrics)
-- A defensible narrative from signal to action to forecast impact
+Use this sequence for a fast leadership review:
+1. Open Executive Snapshot and Top Insights to frame risk and upside quickly.
+2. Set one realistic scenario with date, channel, segment, and executive view mode.
+3. Review pipeline quality and hygiene to identify conversion leakage.
+4. Review churn risk and engagement signals to identify ARR exposure.
+5. Review expansion and cohort trends to identify growth acceleration opportunities.
+6. Use forecast and what-if controls, then confirm execution owners and SLA windows in Action Playbook.
 
-## How to Evaluate This Project in 60 Seconds
+## Portfolio Context
 
-1. Open Executive Snapshot to frame current ARR risk and growth posture.
-2. Read Top Insights for Current Selection to see the current priority stack.
-3. Toggle Executive View Mode to pressure-test how priorities change.
-4. Open Action Playbook to confirm who should do what, by when, and why.
+This is a personal portfolio project that demonstrates decision-support design across Customer Success, RevOps, and Growth functions, with scenario modeling and QA-driven product operations.
 
-## How to Evaluate This Project in 2 Minutes (Leadership Review)
+### Functional Scope Covered
 
-1. Intent and credibility (0:00-0:30): confirm business framing, metric contracts, and leadership relevance.
-2. Signal quality (0:30-1:00): scan Executive Snapshot, Top Insights, and Benchmark Lens.
-3. Operational depth (1:00-1:30): inspect one funnel, one churn, and one expansion slice.
-4. Actionability (1:30-2:00): validate playbook priorities, SLA windows, and projected impact.
-
-## Project Walkthrough
-
-1. Start with Executive Snapshot to establish the current operating baseline.
-2. Use filters to isolate a realistic scenario: date, channel, segment, and executive view mode.
-3. Review pipeline quality and hygiene to identify where revenue conversion is leaking.
-4. Move to churn risk and engagement to identify where ARR is exposed.
-5. Review expansion and cohort signals to identify where ARR can be accelerated.
-6. Use forecast and what-if controls to translate operating changes into projected ARR movement.
-7. End with Action Playbook to convert findings into owner-level execution.
-
-## Portfolio Context (For Senior Leaders)
-
-This is a personal portfolio project that demonstrates how I structure decision support across Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering.
-
-## Why This Is Useful
-
-- It connects customer behavior and process quality to financial outcomes.
-- It helps teams choose priority actions instead of debating disconnected metrics.
-- It creates a common operating language across leadership functions.
+- Executive analytics product design and decision-flow structuring
+- Revenue funnel and lifecycle analytics (pipeline, churn, expansion, forecast)
+- Scenario testing and KPI benchmarking for operating decisions
+- QA and release hygiene for analytics product maintenance
 
 ## Methodology Note
 
-The app uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes. Assumptions are intentionally transparent so leaders can validate drivers, calibrate confidence, and translate insights into owner-level execution.
+The methodology combines product planning, synthetic data generation from scratch, and iterative analytics build cycles. The app uses realistic SaaS simulation to model funnel performance, churn risk, expansion behavior, and scenario outcomes, with assumptions kept transparent so leaders can validate drivers and calibrate confidence.
+
+Development followed an AI-assisted vibe-coding workflow (Claude and GitHub Copilot), with direction led through ideation, planning, execution management, and ongoing maintenance/QA updates.
 
 ## Features
 
@@ -102,11 +81,18 @@ The app uses realistic SaaS simulation to model funnel performance, churn risk, 
 
 **🎯 Benchmark Lens Interpretation**
 - Compare Churn, NRR, SQL→Won, and Expansion against target benchmark ranges
+- Adaptive fourth benchmark card: Expansion Rate in Expansion Focus, Pipeline Hygiene in other modes
 - Use status signals (Healthy, Watch, Action) to quickly decide where intervention is needed
 
 **⚡ Quick Win + Projected Action Impact**
 - Surface the highest immediate upside lever based on the active filtered context
 - Translate each playbook action into directional ARR impact estimates for faster prioritization
+
+**🧭 Scenario Readability and Guidance**
+- Filter-sensitive disclaimers are shown in executive and tab sections to prompt scenario testing
+- Each disclaimer includes a short example so users understand how to drive metric changes
+- Root-cause preview is elevated as a high-visibility callout with direct guidance to Closed Outcome Diagnostics
+- Negative outcome metrics (for example Closed-Lost and stale pipeline counts) use inverse/red semantics
 
 **🧭 Action Playbook Cards**
 - Executive-style priority cards (Critical/High/Monitor) with owner, SLA, trigger, and immediate action
@@ -217,13 +203,16 @@ This project follows a release-first branching model for portfolio clarity.
 5. Direct commits to main should be avoided unless explicitly required.
 
 Current release status:
-- Latest release tag: v2.1.0
+- Latest stable release tag: v2.2.0
+- Current development release target: v2.2.1 (on dev)
 - main carries stable tagged releases; dev is the active development branch
 
 Supporting release documentation:
+- Latest stable release summary: [RELEASE_v2.2.0.md](RELEASE_v2.2.0.md)
+- Prior stable release summary: [RELEASE_v2.1.1.md](RELEASE_v2.1.1.md)
 - Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
 - Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)
-- Latest release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
+- Earlier stable release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
 - Historical v2.0 summary: [docs/archive/RELEASE_v2.0.0.md](docs/archive/RELEASE_v2.0.0.md)
 
 ## Keep-Alive Automation (GitHub Actions)
@@ -245,3 +234,11 @@ You can trigger it anytime from GitHub -> Actions -> `Streamlit Keep Alive` -> `
 Note: This helps reduce cold starts but platform-level sleep policies may still apply.
 
 ---
+
+## Build Attribution and Usage
+
+This project was developed through a vibe-coding workflow using Claude and GitHub Copilot, including both the application code and synthetic dataset generation logic built from scratch.
+
+My role covered end-to-end product ownership: ideation, planning, technical direction, execution management, and ongoing maintenance and updates.
+
+This repository is shared for educational and practical learning use. Anyone may use, adapt, and learn from this work. No formal software license is attached.

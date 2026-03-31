@@ -223,7 +223,8 @@ Current release status:
 Supporting release documentation:
 - Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
 - Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)
-- Previous release summary: [RELEASE_v2.0.0.md](RELEASE_v2.0.0.md)
+- Latest release summary: [RELEASE_v2.1.0.md](RELEASE_v2.1.0.md)
+- Historical v2.0 summary: [docs/archive/RELEASE_v2.0.0.md](docs/archive/RELEASE_v2.0.0.md)
 
 ## Keep-Alive Automation (GitHub Actions)
 

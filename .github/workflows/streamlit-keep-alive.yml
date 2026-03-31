@@ -28,11 +28,23 @@ jobs:
             exit 1
           fi
 
+          if [[ ! "$CLEAN_APP_URL" =~ ^https?:// ]]; then
+            CLEAN_APP_URL="https://$CLEAN_APP_URL"
+          fi
+
+          BASE_URL="$(echo "$CLEAN_APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
+          echo "Base URL resolved for keep-alive checks."
+
       - name: Ping Streamlit app URL
         run: |
           CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
-          HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
-          ROOT_URL="${CLEAN_APP_URL%/}/"
+          if [[ ! "$CLEAN_APP_URL" =~ ^https?:// ]]; then
+            CLEAN_APP_URL="https://$CLEAN_APP_URL"
+          fi
+
+          BASE_URL="$(echo "$CLEAN_APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
+          HEALTH_URL="${BASE_URL}/_stcore/health"
+          ROOT_URL="${BASE_URL}/"
 
           echo "Probing health endpoint (no redirect follow): $HEALTH_URL"
           HEALTH_STATUS=$(curl --silent --show-error --max-time 30 \
@@ -50,7 +62,6 @@ jobs:
           echo "Warming root URL: $ROOT_URL"
           ROOT_STATUS=$(curl --silent --show-error --max-time 45 \
             --retry 3 --retry-delay 5 --retry-connrefused \
-            --location --max-redirs 5 \
             --user-agent "github-actions-streamlit-keepalive" \
             --output /dev/null --write-out "%{http_code}" \
             "$ROOT_URL")
@@ -66,7 +77,12 @@ jobs:
       - name: Health check (HTTP status)
         run: |
           CLEAN_APP_URL="$(echo "$APP_URL" | tr -d '[:space:]')"
-          HEALTH_URL="${CLEAN_APP_URL%/}/_stcore/health"
+          if [[ ! "$CLEAN_APP_URL" =~ ^https?:// ]]; then
+            CLEAN_APP_URL="https://$CLEAN_APP_URL"
+          fi
+
+          BASE_URL="$(echo "$CLEAN_APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
+          HEALTH_URL="${BASE_URL}/_stcore/health"
 
           STATUS_CODE=$(curl --silent --show-error --max-time 30 \
             --retry 2 --retry-delay 3 --retry-connrefused \

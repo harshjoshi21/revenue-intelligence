@@ -1,61 +1,65 @@
 # Customer Lifecycle Intelligence
 
+## [Launch the App](https://revenue-intelligence.streamlit.app/)
+
+Note: First-time loads and wake-ups from sleep mode can take about 60 seconds. If the app does not load immediately, refresh or reopen it once, then wait about a minute.
+
 Predictive Analytics for Retention, Expansion, and Revenue Decisions
 
-## V2 Progress Snapshot (Released)
+## Executive Brief
 
-Completed so far:
-- **Phase 1**: Executive landing experience (hero framing, first-glance clarity cards, dynamic insight row)
-- **Phase 2**: Decision-oriented analytics flow (action-focused tabs, benchmark lens, glossary, executive view mode, action playbook)
-- **Phase 3**: Visual system upgrade (shared chart theme, executive palette, improved chart readability and consistency)
-- **Phase 4**: Portfolio packaging (in-app evaluator walkthrough, decisions-enabled framing, leadership review path)
-- **Phase 5 (prep)**: Dev-side readiness gate (technical smoke checks and [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md))
+This project is designed as an executive operating view, not a dashboard for passive reporting.
+The goal is to help leadership teams align Customer Success, RevOps, and Growth around one question:
 
-Current status:
-- `main` is stable at **v2.0.0**
-- `dev` is now the active post-v2 development line
-- Release tag **v2.0.0** is published on `main`
+How do we protect and grow ARR this quarter with the highest-confidence actions first?
 
-## Post-v2 Roadmap (v2.1 Candidates)
-
-- Add benchmark trend view to show directional movement (improving, flat, deteriorating) across churn, conversion, and expansion.
-- Add deeper playbook explainability so each recommended action shows key drivers and confidence signals.
-- Add segment-over-segment delta view to make leadership comparison faster across channels and customer cohorts.
-- Add scenario presets (conservative, baseline, aggressive) to speed planning discussions.
-- Add exportable executive summary snapshots for leadership review and stakeholder circulation.
-
-## Portfolio Context (For Senior Leaders)
-
-This is a personal portfolio project that showcases how I think about Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering through an executive-style revenue intelligence experience.
-
-## What This Showcase Helps You Evaluate
-
-This project is designed to demonstrate practical decision support, not just reporting. It helps answer:
+It helps answer:
 - Which accounts should Customer Success prioritize this week to reduce churn exposure?
 - Where is the pipeline conversion process breaking, and which stage needs intervention?
 - Which customer segments/cohorts offer the strongest expansion and NRR opportunity?
 
-It also provides scenario visibility for how ARR trajectory can shift under different conversion and operating assumptions.
+It also provides scenario visibility for how ARR trajectory shifts under different operating assumptions.
 
-On first glance, the landing screen now answers:
-- **What this project is**: A unified operating layer that connects lifecycle signals to Customer Success and Growth priorities
-- **What to do with it**: Identify conversion bottlenecks, prioritize at-risk accounts, focus expansion plays, and stress-test growth scenarios
-- **What it conveys**: How customer behavior and operating process quality shape retention, expansion, and revenue trajectory
-- **Why it is useful**: It helps CS and Growth move in sync, reducing handoff friction and accelerating high-impact action
+## What a C-Level Review Gets in Minutes
+
+- A concise ARR risk and growth snapshot
+- A ranked intervention path by urgency and business impact
+- Owner-level execution signals (not just descriptive metrics)
+- A defensible narrative from signal to action to forecast impact
 
 ## How to Evaluate This Project in 60 Seconds
 
-1. Read the landing hero and first-glance cards to understand purpose and audience fit.
-2. Review **Executive Snapshot** and **Top Insights for Current Selection** for immediate risk/opportunity framing.
-3. Use the sidebar filters to simulate different operating contexts.
-4. Open tabs to investigate funnel bottlenecks, churn drivers, expansion leverage, and forecast scenarios.
+1. Open Executive Snapshot to frame current ARR risk and growth posture.
+2. Read Top Insights for Current Selection to see the current priority stack.
+3. Toggle Executive View Mode to pressure-test how priorities change.
+4. Open Action Playbook to confirm who should do what, by when, and why.
 
 ## How to Evaluate This Project in 2 Minutes (Leadership Review)
 
-1. **Intent and credibility (0:00-0:30)**: Read the landing title, methodology section, and first-glance cards.
-2. **Signal quality (0:30-1:00)**: Review Executive Snapshot, Top Insights, and Benchmark Lens.
-3. **Operational depth (1:00-1:30)**: Toggle Executive View Mode and inspect one segment/channel scenario.
-4. **Actionability (1:30-2:00)**: Use Action Playbook to connect findings to owner-level execution.
+1. Intent and credibility (0:00-0:30): confirm business framing, metric contracts, and leadership relevance.
+2. Signal quality (0:30-1:00): scan Executive Snapshot, Top Insights, and Benchmark Lens.
+3. Operational depth (1:00-1:30): inspect one funnel, one churn, and one expansion slice.
+4. Actionability (1:30-2:00): validate playbook priorities, SLA windows, and projected impact.
+
+## Project Walkthrough
+
+1. Start with Executive Snapshot to establish the current operating baseline.
+2. Use filters to isolate a realistic scenario: date, channel, segment, and executive view mode.
+3. Review pipeline quality and hygiene to identify where revenue conversion is leaking.
+4. Move to churn risk and engagement to identify where ARR is exposed.
+5. Review expansion and cohort signals to identify where ARR can be accelerated.
+6. Use forecast and what-if controls to translate operating changes into projected ARR movement.
+7. End with Action Playbook to convert findings into owner-level execution.
+
+## Portfolio Context (For Senior Leaders)
+
+This is a personal portfolio project that demonstrates how I structure decision support across Customer Success analytics, RevOps strategy, implementation operations, and solutions engineering.
+
+## Why This Is Useful
+
+- It connects customer behavior and process quality to financial outcomes.
+- It helps teams choose priority actions instead of debating disconnected metrics.
+- It creates a common operating language across leadership functions.
 
 ## Methodology Note
 
@@ -206,30 +210,31 @@ Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 
 This project follows a release-first branching model for portfolio clarity.
 
-1. `main` = stable, formal releases only.
-2. `dev` = active development and testing for the next major/minor release.
-3. Feature branches should be created from `dev` and merged back into `dev`.
-4. When a release is ready, merge `dev` into `main` and create a release tag on `main` (for example: `v2.0.0`, `v3.0.0`).
-5. Optional milestone tags can be created on `dev` as pre-release checkpoints (for example: `v2.0.0-rc.1`).
+1. main = stable, formal releases only.
+2. dev = active development and validation branch.
+3. Feature branches should be created from dev and merged back into dev.
+4. When a release is ready, promote dev to main, then create a release tag on main.
+5. Direct commits to main should be avoided unless explicitly required.
 
-Current baseline:
-- `v1.0.0` is the stable release baseline on `main`.
-- `dev` is the active v2 development line.
+Current release status:
+- Latest release tag: v2.1.0
+- main carries stable tagged releases; dev is the active development branch
 
-Release preparation checklist:
-- See [V2_READINESS_CHECKLIST.md](V2_READINESS_CHECKLIST.md) for the full pre-release validation gate on `dev`.
-- Draft release notes for final cut: [V2_RELEASE_NOTES_DRAFT.md](V2_RELEASE_NOTES_DRAFT.md)
+Supporting release documentation:
+- Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
+- Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)
+- Previous release summary: [RELEASE_v2.0.0.md](RELEASE_v2.0.0.md)
 
 ## Keep-Alive Automation (GitHub Actions)
 
 This repo includes a scheduled workflow at [.github/workflows/streamlit-keep-alive.yml](.github/workflows/streamlit-keep-alive.yml) that pings your deployed Streamlit app every 15 minutes and runs a separate HTTP health check.
-The workflow targets Streamlit's health endpoint (`/_stcore/health`) to avoid redirect loops and get a stable status response.
+The workflow normalizes your deployment URL, probes both root and health endpoints, and fails fast if availability checks do not pass.
 
 ### One-time setup
 
 1. Go to your GitHub repo -> Settings -> Secrets and variables -> Actions.
 2. Create a new repository secret named `STREAMLIT_APP_URL`.
-3. Set its value to your deployed Streamlit URL (for example: `https://revenue-intelligence.streamlit.app/`).
+3. Set its value to your deployed Streamlit URL.
 4. Merge this workflow to `main` (scheduled workflows run from the default branch).
 
 ### Manual run
@@ -239,5 +244,3 @@ You can trigger it anytime from GitHub -> Actions -> `Streamlit Keep Alive` -> `
 Note: This helps reduce cold starts but platform-level sleep policies may still apply.
 
 ---
-
-**Built by Harsh Joshi.**

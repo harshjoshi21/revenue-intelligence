@@ -1,5 +1,7 @@
 # v2.0.0 Release Notes (Draft)
 
+Archived historical artifact. This document is preserved for release-process history and is superseded by current tagged releases.
+
 Status: Draft for upcoming formal release from `dev` to `main`.
 
 ## Highlights

@@ -1,5 +1,7 @@
 # V2 Readiness Checklist (dev branch)
 
+Archived historical artifact. This checklist is retained for process history and does not represent the current release gate.
+
 Use this checklist before opening any `dev -> main` release PR.
 
 ## 1. Product and UX Validation

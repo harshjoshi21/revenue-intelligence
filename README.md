@@ -203,14 +203,14 @@ This project follows a release-first branching model for portfolio clarity.
 5. Direct commits to main should be avoided unless explicitly required.
 
 Current release status:
-- Latest stable release tag: v2.2.2
-- Current development release target: v2.2.3 (on dev)
+- Latest stable release tag: v2.2.3
+- Current development release target: v2.2.4 (on dev)
 - main carries stable tagged releases; dev is the active development branch
 
 Supporting release documentation:
-- Latest stable release summary: [RELEASE_v2.2.2.md](RELEASE_v2.2.2.md)
-- Prior stable release summary: [docs/archive/RELEASE_v2.2.1.md](docs/archive/RELEASE_v2.2.1.md)
-- Earlier stable release summary: [docs/archive/RELEASE_v2.2.0.md](docs/archive/RELEASE_v2.2.0.md)
+- Latest stable release summary: [RELEASE_v2.2.3.md](RELEASE_v2.2.3.md)
+- Prior stable release summary: [docs/archive/RELEASE_v2.2.2.md](docs/archive/RELEASE_v2.2.2.md)
+- Earlier stable release summary: [docs/archive/RELEASE_v2.2.1.md](docs/archive/RELEASE_v2.2.1.md)
 - Earlier stable release summary: [docs/archive/RELEASE_v2.1.1.md](docs/archive/RELEASE_v2.1.1.md)
 - Historical readiness checklist: [docs/archive/V2_READINESS_CHECKLIST.md](docs/archive/V2_READINESS_CHECKLIST.md)
 - Historical release draft notes: [docs/archive/V2_RELEASE_NOTES_DRAFT.md](docs/archive/V2_RELEASE_NOTES_DRAFT.md)

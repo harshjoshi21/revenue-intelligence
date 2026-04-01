@@ -386,12 +386,29 @@ st.markdown("""
         background: #ffffff;
         border: 1px solid var(--slate-200);
         border-radius: 12px;
-        padding: 18px 18px 10px;
-        height: 410px;
+        padding: 18px 18px 14px;
+        height: clamp(470px, 56vh, 610px);
         display: flex;
         flex-direction: column;
         margin-bottom: 14px;
-        overflow: visible;
+        box-sizing: border-box;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+    .playbook-card::-webkit-scrollbar {
+        width: 6px;
+    }
+    .playbook-card::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .playbook-card::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
+    .playbook-card:not(:hover)::-webkit-scrollbar-thumb {
+        background: transparent;
     }
     .playbook-critical {
         border-left: 5px solid #c0392b;
@@ -433,6 +450,8 @@ st.markdown("""
         color: #374151;
         font-size: 0.86rem;
         line-height: 1.4;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
     .playbook-impact {
         margin-top: 8px;
@@ -440,6 +459,26 @@ st.markdown("""
         font-size: 0.9rem;
         line-height: 1.35;
         font-weight: 700;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    .playbook-scope {
+        margin: 8px 0 0 0;
+        color: #475569;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    .playbook-focus {
+        margin: 8px 0 0 0;
+        padding-top: 8px;
+        border-top: 1px dashed #cbd5e1;
+        color: #334155;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
     .playbook-critical .playbook-impact {
         color: #991b1b;
@@ -1139,6 +1178,76 @@ def build_playbook_rows(metrics, impact_by_key):
     ]
 
 
+def build_scope_contract_line(action_key, metrics):
+    """Provide denominator scope text for each playbook action."""
+    if action_key == 'churn':
+        total_customers = metrics.get('total_customers', 0)
+        return (
+            f"Portfolio cohort: at-risk share uses {metrics.get('at_risk_count', 0)} of {total_customers} "
+            f"selected accounts; churn rate uses churned of the same {total_customers} accounts."
+        )
+
+    if action_key == 'pipeline':
+        return (
+            f"Lead-filter scoped: SQL->Won uses {metrics.get('won_count', 0)} won of {metrics.get('sql_count', 0)} SQL; "
+            f"hygiene aging uses {metrics.get('open_opp_count', 0)} open opportunities."
+        )
+
+    if action_key == 'expansion':
+        total_customers = metrics.get('total_customers', 0)
+        return (
+            f"Portfolio cohort: expansion rate uses expansion ARR divided by total ARR across "
+            f"{total_customers} selected accounts."
+        )
+
+    return "Portfolio cohort scope for current date, channel, and segment filters."
+
+
+def build_focus_lens_line(action_key, view_mode, portfolio_row, focus_row, focus_metrics, portfolio_metrics):
+    """Summarize how focus-mode diagnostics compare with portfolio-truth priority."""
+    if view_mode == 'All Accounts':
+        return ""
+
+    if action_key == 'pipeline':
+        return (
+            f"Within {view_mode}, pipeline priority does not re-score. Source-of-truth remains lead-filter scoped: "
+            f"{portfolio_metrics.get('won_count', 0)} won of {portfolio_metrics.get('sql_count', 0)} SQL "
+            f"({portfolio_metrics.get('sql_to_won', 0):.1f}%)."
+        )
+
+    if not focus_row:
+        return f"Within {view_mode}, no focus-cohort diagnostic was available for this action."
+
+    priority_rank = {'Monitor': 0, 'High': 1, 'Critical': 2}
+    portfolio_priority = portfolio_row.get('Priority', 'Monitor')
+    focus_priority = focus_row.get('Priority', 'Monitor')
+    portfolio_rank = priority_rank.get(portfolio_priority, 0)
+    focus_rank = priority_rank.get(focus_priority, 0)
+
+    if focus_rank > portfolio_rank:
+        delta_text = 'higher than portfolio priority'
+    elif focus_rank < portfolio_rank:
+        delta_text = 'lower than portfolio priority'
+    else:
+        delta_text = 'aligned with portfolio priority'
+
+    if action_key == 'churn':
+        return (
+            f"Within {view_mode}: {focus_priority} ({delta_text}). Focus cohort shows at-risk share "
+            f"{focus_metrics.get('at_risk_pct', 0):.1f}% ({focus_metrics.get('at_risk_count', 0)} of "
+            f"{focus_metrics.get('total_customers', 0)} accounts) and churn {focus_metrics.get('churn_rate', 0):.2f}%."
+        )
+
+    if action_key == 'expansion':
+        return (
+            f"Within {view_mode}: {focus_priority} ({delta_text}). Focus cohort expansion is "
+            f"{focus_metrics.get('expansion_pct', 0):.1f}% with active ARR "
+            f"{format_currency(focus_metrics.get('active_arr', 0), decimals=2)}."
+        )
+
+    return f"Within {view_mode}: {focus_priority} ({delta_text})."
+
+
 def render_section_header(icon, title, description):
     st.markdown(
         f"""
@@ -1178,6 +1287,11 @@ def render_playbook_card(row):
         priority_class = "playbook-monitor"
         priority_icon = "🔵"
 
+    scope_contract_line = row.get('Scope Contract', '')
+    focus_lens_line = row.get('Focus Lens', '')
+    scope_html = f"<p class='playbook-scope'><strong>Scope:</strong> {scope_contract_line}</p>" if scope_contract_line else ""
+    focus_html = f"<p class='playbook-focus'><strong>Focus Lens:</strong> {focus_lens_line}</p>" if focus_lens_line else ""
+
     st.markdown(
         f"""
         <div class='playbook-card {priority_class}'>
@@ -1188,6 +1302,8 @@ def render_playbook_card(row):
             <p class='playbook-line'><strong>SLA:</strong> {row['Suggested SLA']}</p>
             <p class='playbook-line'><strong>Immediate Action:</strong> {row['Immediate Action']}</p>
             <p class='playbook-impact'>Projected Impact: {row['Projected Impact']}</p>
+            {scope_html}
+            {focus_html}
         </div>
         """,
         unsafe_allow_html=True
@@ -1338,15 +1454,11 @@ data_start = min(leads_df['lead_date'].min(), customers_df['start_date'].min())
 data_end = max(leads_df['lead_date'].max(), customers_df['start_date'].max())
 default_date_range = (pd.to_datetime(data_start), pd.to_datetime(data_end))
 
-default_channels = leads_df['channel'].value_counts().head(3).index.tolist()
-if not default_channels:
-    default_channels = leads_df['channel'].unique().tolist()
+default_channels = sorted(leads_df['channel'].dropna().unique().tolist())
 
-default_segments = customers_df['segment'].value_counts().index.tolist()
-if not default_segments:
-    default_segments = customers_df['segment'].unique().tolist()
+default_segments = sorted(customers_df['segment'].dropna().unique().tolist())
 
-if st.sidebar.button("Reset to recommended defaults", help="Reset date, filters, what-if, and view mode to the recommended starting context."):
+if st.sidebar.button("Reset to business-wide defaults", help="Reset date, filters, what-if, and view mode to the full-business baseline context."):
     st.session_state['date_range'] = default_date_range
     st.session_state['selected_channels'] = default_channels
     st.session_state['selected_segments'] = default_segments
@@ -1383,7 +1495,7 @@ selected_channels = st.sidebar.multiselect(
     options=leads_df['channel'].unique(),
     default=default_channels,
     key="selected_channels",
-    help="Start with top-volume channels, then isolate one source to inspect conversion and customer outcomes by acquisition source."
+    help="All channels are selected by default to represent the business-wide operating picture."
 )
 
 # Segment filter
@@ -1392,7 +1504,7 @@ selected_segments = st.sidebar.multiselect(
     options=customers_df['segment'].unique(),
     default=default_segments,
     key="selected_segments",
-    help="Focus on one or two segments to compare retention and expansion dynamics clearly."
+    help="All segments are selected by default to represent the business-wide operating picture."
 )
 
 # What-if slider: improve conversion
@@ -2538,10 +2650,25 @@ with tab5:
         """,
         unsafe_allow_html=True
     )
-    render_filter_disclaimer("Narrow to one segment and channel to see priority labels, owners, and projected impacts re-rank for that exact operating scenario.")
+    st.markdown(
+        """
+        <div class='context-callout'>
+            <strong>Decision scope:</strong> Recommendations in this section stay anchored to the full business baseline
+            (all dates, channels, and segments) so execution decisions reflect the complete operating picture.
+            Changing filters or Executive View Mode will not alter Action Playbook recommendations.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    impact_by_key = {row['key']: row for row in impact_rows}
-    playbook_rows = build_playbook_rows(operating_metrics, impact_by_key)
+    playbook_metrics = derive_operating_metrics(leads_df, customers_df, as_of_date=baseline_as_of_date)
+    playbook_impact_rows, _ = calculate_action_impacts(leads_df, customers_df, playbook_metrics)
+    playbook_impact_by_key = {row['key']: row for row in playbook_impact_rows}
+    playbook_rows = build_playbook_rows(playbook_metrics, playbook_impact_by_key)
+
+    for row in playbook_rows:
+        action_key = row['action_key']
+        row['Scope Contract'] = build_scope_contract_line(action_key, playbook_metrics)
 
     playbook_df = pd.DataFrame(playbook_rows)
     playbook_order = {'Critical': 0, 'High': 1, 'Monitor': 2}
@@ -2549,7 +2676,7 @@ with tab5:
     playbook_df = playbook_df.sort_values(['priority_rank', 'execution_order']).drop(columns=['priority_rank', 'execution_order', 'action_key'])
 
     st.markdown(
-        f"<p class='table-context'>Showing {len(playbook_df)} prioritized actions for the current filter context, ordered by urgency.</p>",
+        f"<p class='table-context'>Showing {len(playbook_df)} business-wide prioritized actions, ordered by urgency.</p>",
         unsafe_allow_html=True
     )
 
@@ -2559,11 +2686,11 @@ with tab5:
             render_playbook_card(row)
 
     st.markdown("**Execution Notes:**")
-    st.markdown("- Review this playbook after every filter or scenario change.")
+    st.markdown("- Recommendations are fixed to the full-business baseline and do not re-rank with filter or lens changes.")
     st.markdown("- Priority legend: Critical = intervene now, High = close a gap, Monitor = maintain current performance.")
-    st.markdown("- Pipeline priority now separates conversion intervention from backlog hygiene cleanup so teams can assign the right motion.")
+    st.markdown("- Pipeline priority separates conversion intervention from backlog hygiene cleanup so teams can assign the right motion.")
     st.markdown("- Use it as the operating bridge between analytics and owner-level action planning.")
-    st.markdown("- Projected impacts are directional estimates based on the current filtered operating context.")
+    st.markdown("- Projected impacts are directional estimates anchored to the same business-wide baseline context.")
 
 # Footer
 st.divider()

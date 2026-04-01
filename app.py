@@ -1818,23 +1818,39 @@ with tab1:
             default=np.where(owner_table['open_opps'] > 0, 1, 0)
         )
         owner_table['weekly_cleanup_quota'] = owner_table['weekly_cleanup_quota'].astype(int).clip(lower=0)
+        sla_rank = {'Critical Breach': 0, 'Watch Breach': 1, 'On Track': 2}
+        owner_table['sla_rank'] = owner_table['sla_breach'].map(sla_rank).fillna(3).astype(int)
         owner_rank = {'Critical': 0, 'High': 1, 'Watch': 2}
         owner_table['priority_rank'] = owner_table['hygiene_priority'].map(owner_rank)
         owner_table = owner_table.sort_values(
-            ['priority_rank', 'weekly_cleanup_quota', 'stale_90', 'stale_60', 'max_days_open'],
-            ascending=[True, False, False, False, False]
+            ['sla_rank', 'priority_rank', 'weekly_cleanup_quota', 'stale_90', 'stale_60', 'max_days_open'],
+            ascending=[True, True, False, False, False, False]
         )
 
         total_quota = int(owner_table['weekly_cleanup_quota'].sum())
-        critical_breach_owners = int((owner_table['sla_breach'] == 'Critical Breach').sum())
-        if critical_breach_owners > 0:
+        breach_mask = owner_table['sla_breach'].isin(['Critical Breach', 'Watch Breach'])
+        critical_breach_mask = owner_table['sla_breach'] == 'Critical Breach'
+        critical_priority_mask = owner_table['hygiene_priority'] == 'Critical'
+
+        breached_owner_count = int(breach_mask.sum())
+        breached_quota_total = int(owner_table.loc[breach_mask, 'weekly_cleanup_quota'].sum()) if breached_owner_count > 0 else 0
+        critical_breach_count = int(critical_breach_mask.sum())
+        critical_breach_quota_total = int(owner_table.loc[critical_breach_mask, 'weekly_cleanup_quota'].sum()) if critical_breach_count > 0 else 0
+        critical_priority_count = int(critical_priority_mask.sum())
+
+        if critical_breach_count > 0:
             st.warning(
-                f"Owner SLA signal: {critical_breach_owners} owner(s) are in Critical Breach. "
-                f"Set a minimum weekly cleanup target of {total_quota} opportunities this cycle."
+                f"Owner SLA signal: {critical_breach_count} owner(s) are in Critical Breach. "
+                f"Set a minimum weekly cleanup target of {breached_quota_total} breached opportunities this cycle."
+            )
+        elif breached_owner_count > 0:
+            st.info(
+                f"Owner SLA signal: no Critical Breach owners. "
+                f"{breached_owner_count} owner(s) are in Watch Breach with a recommended weekly cleanup target of {breached_quota_total} opportunities."
             )
         else:
             st.info(
-                f"Owner SLA signal: no Critical Breach owners. Recommended weekly cleanup target is {total_quota} opportunities."
+                f"Owner SLA signal: no owners are currently in SLA breach. Recommended baseline weekly cleanup target is {total_quota} opportunities."
             )
 
         owner_display = owner_table[[
@@ -1845,9 +1861,9 @@ with tab1:
             'stale_60_pct',
             'median_days_open',
             'max_days_open',
-            'sla_breach',
             'weekly_cleanup_quota',
-            'hygiene_priority'
+            'hygiene_priority',
+            'sla_breach'
         ]].copy()
 
         def highlight_owner_rows(row):
@@ -1855,8 +1871,6 @@ with tab1:
                 return ['background-color: #fee2e2; color: #7f1d1d; font-weight: 600;'] * len(row)
             if row['sla_breach'] == 'Watch Breach':
                 return ['background-color: #ffedd5; color: #7c2d12;'] * len(row)
-            if row['hygiene_priority'] == 'Critical':
-                return ['background-color: #fff7ed; color: #7c2d12;'] * len(row)
             return [''] * len(row)
 
         st.dataframe(
@@ -1875,6 +1889,18 @@ with tab1:
                 'weekly_cleanup_quota': st.column_config.NumberColumn('Weekly Cleanup Quota', format='%d'),
                 'hygiene_priority': st.column_config.TextColumn('Priority')
             }
+        )
+
+        st.markdown(
+            """
+            <div class='context-callout'>
+                <strong>How this logic is defined:</strong><br>
+                <strong>SLA Status (execution urgency):</strong> Critical Breach if Open >=90d is 2+ or oldest open is >=120d; Watch Breach if Open >=60d is 2+ or median open age is >=60d; otherwise On Track.<br>
+                <strong>Priority (backlog severity):</strong> Critical if Open >=90d is 3+ or >=60d share is >=50%; High if Open >=60d is 2+ or >=60d share is >=30%; otherwise Watch.<br>
+                <strong>Sorting:</strong> rows are ordered by SLA Status first, then Priority, then cleanup severity signals.
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
         cleanup_plan = owner_table[[
@@ -1911,30 +1937,23 @@ with tab1:
         cleanup_plan.insert(5, 'selected_channels', '|'.join(map(str, selected_channels)) if selected_channels else 'All')
         cleanup_plan.insert(6, 'selected_segments', '|'.join(map(str, selected_segments)) if selected_segments else 'All')
         cleanup_plan['week_reference'] = pd.to_datetime(filter_end_date).strftime('%Y-%m-%d')
-        breach_mask = cleanup_plan['sla_breach'].isin(['Critical Breach', 'Watch Breach'])
         breached_plan = cleanup_plan[breach_mask].copy()
-        critical_breach_mask = cleanup_plan['sla_breach'] == 'Critical Breach'
         critical_breach_plan = cleanup_plan[critical_breach_mask].copy()
-
-        breached_owner_count = len(breached_plan)
-        breached_quota_total = int(breached_plan['weekly_cleanup_quota'].sum()) if breached_owner_count > 0 else 0
-        critical_breach_count = len(critical_breach_plan)
-        critical_breach_quota_total = int(critical_breach_plan['weekly_cleanup_quota'].sum()) if critical_breach_count > 0 else 0
         if breached_owner_count > 0:
-            st.markdown(
-                f"**Standup packet:** {breached_owner_count} owner(s) currently breached with a combined weekly cleanup quota of **{breached_quota_total}** opportunities."
-            )
             if critical_breach_count > 0:
                 st.markdown(
                     f"**Escalation packet:** {critical_breach_count} Critical Breach owner(s) with a focused weekly quota of **{critical_breach_quota_total}** opportunities."
                 )
-        else:
-            st.markdown("**Standup packet:** No owners are currently in SLA breach.")
+            if critical_priority_count != critical_breach_count:
+                st.caption(
+                    f"Priority note: {critical_priority_count} owner(s) are marked Critical Priority. "
+                    "Priority reflects backlog mix and may differ from SLA Breach status."
+                )
 
         csv_data = cleanup_plan.to_csv(index=False).encode('utf-8')
         breached_csv_data = breached_plan.to_csv(index=False).encode('utf-8')
         critical_breached_csv_data = critical_breach_plan.to_csv(index=False).encode('utf-8')
-        download_col1, download_col2, download_col3, download_col4 = st.columns([2, 2, 2, 3])
+        download_col1, download_col2, download_col3 = st.columns([2, 2, 2])
         with download_col1:
             st.download_button(
                 label='Download Weekly Cleanup Plan (CSV)',
@@ -1961,11 +1980,7 @@ with tab1:
                 disabled=critical_breach_count == 0,
                 help='Exports only Critical Breach owners for immediate escalation review.'
             )
-        with download_col4:
-            st.caption(
-                f'Rows are highlighted by SLA severity: Critical Breach (red), Watch Breach (amber), and Critical priority (light amber). '
-                f'Export packet ID: {packet_id}.'
-            )
+        st.caption(f'Export packet ID: {packet_id}.')
     else:
         st.info('No open opportunities are available for owner hygiene analysis in this filter context.')
 

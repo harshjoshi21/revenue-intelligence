@@ -656,11 +656,11 @@ def get_benchmark_signal(metric_name, value):
     metric = metric_name.lower()
 
     if metric == "churn":
+        if value < 5:
+            return "Healthy", "signal-healthy", "Retention baseline is within the healthy threshold."
         if value <= 7:
-            return "Healthy", "signal-healthy", "Retention baseline is within expected range."
-        if value <= 10:
-            return "Watch", "signal-watch", "Retention is drifting and needs weekly review."
-        return "Action", "signal-action", "Escalate intervention plan for at-risk accounts."
+            return "Watch", "signal-watch", "Retention is in the watch band and needs weekly review."
+        return "Action", "signal-action", "Escalate intervention plan because churn is above the 7% ceiling."
 
     if metric == "nrr":
         if value >= 110:
@@ -999,7 +999,7 @@ def build_playbook_rows(metrics, impact_by_key):
                 f"({metrics['at_risk_count']} of {metrics['total_customers']} accounts)"
             )
         if churn_rate > 10:
-            churn_reasons.append(f"observed churn rate {churn_rate:.1f}% is above 10% action threshold")
+            churn_reasons.append(f"observed churn rate {churn_rate:.2f}% is above 10% action threshold")
         churn_trigger = " and ".join(churn_reasons) + "."
         churn_sla = 'Launch owner outreach within 48 hours'
     elif churn_priority == 'High':
@@ -1011,14 +1011,14 @@ def build_playbook_rows(metrics, impact_by_key):
                 f"({metrics['at_risk_count']} of {metrics['total_customers']} accounts)"
             )
         if churn_rate > 7:
-            churn_reasons.append(f"observed churn rate {churn_rate:.1f}% is above the 7% benchmark ceiling")
+            churn_reasons.append(f"observed churn rate {churn_rate:.2f}% is above the 7% benchmark ceiling")
         churn_trigger = " and ".join(churn_reasons) + "."
         churn_sla = 'Launch focused outreach and churn root-cause review within 5 business days'
     else:
         churn_signal = 'Retention operating in control'
         churn_trigger = (
             f"At-risk share {metrics['at_risk_pct']:.1f}% is within <=15% and observed churn rate "
-            f"{churn_rate:.1f}% is within <=7% control bands."
+            f"{churn_rate:.2f}% is within <=7% control bands."
         )
         churn_sla = 'Review risk cohort weekly'
 
@@ -1517,7 +1517,7 @@ pipeline_hygiene_ref = operating_metrics['open_opp_stale_60_pct']
 bench1, bench2, bench3, bench4 = st.columns(4)
 with bench1:
     churn_signal, churn_class, churn_note = get_benchmark_signal("churn", churn_rate_view)
-    render_benchmark_card("Churn Rate", "5-7%", f"{churn_rate_view:.1f}%", churn_signal, churn_class, churn_note)
+    render_benchmark_card("Churn Rate", "Healthy: <5% (Watch: 5-7%)", f"{churn_rate_view:.2f}%", churn_signal, churn_class, churn_note)
 with bench2:
     nrr_signal, nrr_class, nrr_note = get_benchmark_signal("nrr", nrr_view)
     render_benchmark_card("NRR", "105-115%", f"{nrr_view:.0f}%", nrr_signal, nrr_class, nrr_note)

@@ -182,8 +182,8 @@ python qa_smoke.py
 
 This repo also runs the same smoke suite automatically via GitHub Actions using [.github/workflows/qa-smoke.yml](.github/workflows/qa-smoke.yml).
 
-- Triggered on pushes to `main` and `dev`
-- Triggered on pull requests targeting `main` and `dev`
+- Triggered on pushes to `main` and `v2-dev`
+- Triggered on pull requests targeting `main` and `v2-dev`
 - Can be run manually from GitHub Actions via `Run workflow`
 
 The workflow installs dependencies from `requirements.txt` and runs `python qa_smoke.py`.
@@ -197,15 +197,15 @@ Deploy to Streamlit Cloud, Heroku, or any cloud platform that supports Python.
 This project follows a release-first branching model for portfolio clarity.
 
 1. main = stable, formal releases only.
-2. dev = active development and validation branch.
-3. Feature branches should be created from dev and merged back into dev.
-4. When a release is ready, promote dev to main, then create a release tag on main.
+2. v2-dev = active development and validation branch.
+3. Feature branches should be created from v2-dev and merged back into v2-dev.
+4. When a release is ready, promote v2-dev to main, then create a release tag on main.
 5. Direct commits to main should be avoided unless explicitly required.
 
 Current release status:
 - Latest stable release tag: v2.2.3
-- Current development release target: v2.2.4 (on dev)
-- main carries stable tagged releases; dev is the active development branch
+- Current development release target: v2.2.4 (on v2-dev)
+- main carries stable tagged releases; v2-dev is the active development branch
 
 Supporting release documentation:
 - Latest stable release summary: [RELEASE_v2.2.3.md](RELEASE_v2.2.3.md)
